@@ -1,0 +1,26 @@
+{
+  "name": "erii",
+  "version": "1.0.0",
+  "description": "",
+  "main": "./src/index.js",
+  "scripts": {
+    "build": "tsc"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Last-Order/haruka.git"
+  },
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Last-Order/haruka/issues"
+  },
+  "homepage": "https://github.com/Last-Order/haruka#readme",
+  "dependencies": {
+    "chalk": "^2.4.1",
+    "minimist": "^1.2.0"
+  },
+  "devDependencies": {
+    "typescript": "^2.8.3"
+  }
+}
