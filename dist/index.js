@@ -44,6 +44,9 @@ class Erii {
         return {
             showVersion: () => {
                 this.showVersion();
+            },
+            showHelp: () => {
+                this.showHelp();
             }
         };
     }

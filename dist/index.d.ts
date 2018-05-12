@@ -9,6 +9,7 @@ export interface CommandMap {
 }
 export interface CommandCtx {
     showVersion: () => any;
+    showHelp: () => any;
 }
 export interface ArgumentDescription {
     name: string;

@@ -19,9 +19,23 @@ Erii.bind({
     description: 'Show Help',
 }, (ctx) => {
     ctx.showHelp();
-})
+});
+
+Erii.start();
 ```
+
+**call from cli**
 
 ```bash
 node index.js --help
+```
+
+**output**
+```
+example / 0.0.1
+
+Help:
+          Commands                                Description
+
+          --help                                  Show Help
 ```

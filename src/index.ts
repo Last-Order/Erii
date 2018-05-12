@@ -15,6 +15,7 @@ export interface CommandMap {
 
 export interface CommandCtx {
     showVersion: () => any;
+    showHelp: () => any;
 }
 
 export interface ArgumentDescription {
@@ -69,6 +70,9 @@ export class Erii {
         return {
             showVersion: () => {
                 this.showVersion();
+            },
+            showHelp: () => {
+                this.showHelp();
             }
         }
     }
