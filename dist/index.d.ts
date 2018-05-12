@@ -1,15 +1,18 @@
 export interface Command {
-    name: string;
+    name: string | string[];
     description?: string;
     argumentDescription?: ArgumentDescription;
-    handler: (ctx: CommandCtx, ...extraArguments) => any;
+    alias?: string[];
+    redirect?: string;
+    handler?: (ctx: CommandCtx, ...extraArguments) => any;
 }
 export interface CommandMap {
     [key: string]: Command;
 }
 export interface CommandCtx {
-    showVersion: () => any;
-    showHelp: () => any;
+    showVersion: () => void;
+    showHelp: () => void;
+    getArgument: (commandName: string) => string;
 }
 export interface ArgumentDescription {
     name: string;
@@ -18,7 +21,8 @@ export interface ArgumentDescription {
 export declare class Erii {
     rawArguments: string[];
     parsedArguments: {
-        [key: string]: string;
+        _?: string[];
+        [key: string]: string | string[];
     };
     private version;
     private name;
@@ -50,6 +54,18 @@ export declare class Erii {
      * 启动
      */
     start(): void;
+    /**
+     * 执行命令担当函数
+     * @param command
+     * @param extraArguments
+     */
+    private exec(command, ...extraArguments);
+    /**
+     * 获得命令的参数
+     * @param commandName
+     * @param followRedirect 是否遵循重定向
+     */
+    getArgument(commandName: string, followRedirect?: boolean): string;
     /**
      * 启动
      * エリイ 起きてます❤
