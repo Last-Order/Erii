@@ -7,10 +7,18 @@ const CLI = require('clui'),
 export interface Command {
     name: string | string[];
     description?: string;
-    argumentDescription?: ArgumentDescription,
+    argument?: argument,
     alias?: string[],
     redirect?: string;
-    handler?: (ctx: CommandCtx, ...extraArguments) => any
+    options?: Option[];
+    handler?: (ctx: CommandCtx, options?: object) => any
+}
+
+export interface Option {
+    name: string | string[];
+    description?: string;
+    command?: string;
+    argument?: argument,
 }
 
 export interface CommandMap {
@@ -23,7 +31,7 @@ export interface CommandCtx {
     getArgument: (commandName: string) => string;
 }
 
-export interface ArgumentDescription {
+export interface argument {
     name: string;
     description: string;
 }
@@ -38,7 +46,8 @@ export class Erii {
     private name: string = "Erii";
 
     commands: CommandMap = {};
-
+    commonOptions: Option[] = [];
+ 
     constructor() {
         this.rawArguments = process.argv.slice(2);
         this.parsedArguments = minimist(process.argv.slice(2));
@@ -51,20 +60,26 @@ export class Erii {
         }
     }
 
+    /**
+     * 绑定命令处理函数
+     * @param config 
+     * @param handler 
+     */
     bind(config: Command, handler: (ctx: CommandCtx, ...extraArguments) => any) {
         if (config.name === undefined) {
             return console.error("无效命令绑定，忽略");
         }
 
-        const { name, description, argumentDescription } = config;
+        const { name, description, argument } = config;
 
         const mainCommand = Array.isArray(name) ? name.shift() : name;
 
         this.commands[mainCommand] = {
             name: mainCommand,
             description,
-            argumentDescription,
+            argument,
             alias: [],
+            options: [],
             handler
         };
 
@@ -80,6 +95,22 @@ export class Erii {
     }
 
     /**
+     * 增加设置项
+     * @param config 
+     */
+    addOption(config: Option) {
+        config.name = Array.isArray(config.name) ? config.name : [config.name];
+        if (!config.command) {
+            this.commonOptions.push(config);
+        } else {
+            if (!(config.command in this.commands)){
+                return console.error(`Command for option ${config.name.join(', ')} not found, ignored`);
+            } 
+            this.commands[config.command].options.push(config);
+        }
+    }
+
+    /**
      * 
      * @param command 
      */
@@ -91,8 +122,8 @@ export class Erii {
             showHelp: () => {
                 this.showHelp();
             },
-            getArgument: (argumentName: string) => {
-                return this.getArgument(argumentName);
+            getArgument: (commandName: string = command) => {
+                return this.getArgument(commandName);
             }
         }
     }
@@ -118,9 +149,9 @@ export class Erii {
         const Line = CLI.Line;
 
         new Line()
-            .padding(10)
-            .column('Commands', 20, [clc.cyan])
-            .column('Description', 40, [clc.cyan])
+            .padding(5)
+            .column('Commands', 30, [clc.cyan])
+            .column('Description', 30, [clc.cyan])
             .column('Alias', 20, [clc.cyan])
             .fill()
             .output();
@@ -131,27 +162,90 @@ export class Erii {
             }
             let commandText = '--' + key;
             let aliasText = '';
-            if (this.commands[key].argumentDescription) {
-                commandText += ` <${this.commands[key].argumentDescription.name}>`;
+            if (this.commands[key].argument) {
+                commandText += ` <${this.commands[key].argument.name}>`;
             }
             if (this.commands[key].alias.length > 0) {
                 aliasText += '--';
                 aliasText += this.commands[key].alias.join(' / --');
             }
             new Line()
-                .padding(10)
-                .column(commandText, 20)
-                .column(this.commands[key].description, 40)
+                .padding(5)
+                .column(commandText, 30)
+                .column(this.commands[key].description, 30)
                 .column(aliasText, 20)
                 .fill()
                 .output();
-            if (this.commands[key].argumentDescription) {
+            if (this.commands[key].argument) {
+                // 参数说明
                 new Line()
-                    .padding(10)
-                    .column(`${Array.from(Array(key.length + 2), i => ' ').join('')}-<${this.commands[key].argumentDescription.name}>`, 20)
-                    .column(this.commands[key].argumentDescription.description, 40)
+                    .padding(9)
+                    .column(`<${this.commands[key].argument.name}>`, 26)
+                    .column(this.commands[key].argument.description, 30)
                     .fill()
                     .output();
+            }
+            if (this.commands[key].options.length > 0) {
+                // 设置项说明
+                for (const option of this.commands[key].options) {
+                    let optionsText = '';
+                    const optionName = Array.isArray(option.name) ? option.name : [option.name];
+                    if (option.argument) {
+                        optionsText += `--${optionName.join(', ')} <${option.argument.name}>`;
+                    } else {
+                        optionsText += `--${optionName.join(', ')}`
+                    };
+                    new Line()
+                        .padding(9)
+                        .column(optionsText, 26)
+                        .column(option.description || '')
+                        .fill()
+                        .output();
+                    if (option.argument) {
+                        // 设置项参数说明
+                        new Line()
+                        .padding(13)
+                        .column(`<${option.argument.name}>`, 22)
+                        .column(option.argument.description || '')
+                        .fill()
+                        .output();
+                    }
+                }
+            }
+        }
+        new Line().fill().output();
+        if (this.commonOptions.length > 0) {
+            // 通用设置项说明
+            console.log('Options:\n');
+            new Line()
+            .padding(5)
+            .column('Options', 30, [clc.cyan])
+            .column('Description', 30, [clc.cyan])
+            .fill()
+            .output();
+            for (const option of this.commonOptions) {
+                let optionsText = '';
+                const optionName = Array.isArray(option.name) ? option.name : [option.name];
+                if (option.argument) {
+                    optionsText += `--${optionName.join(', ')} <${option.argument.name}>`;
+                } else {
+                    optionsText += `--${optionName.join(', ')}`
+                };
+                new Line()
+                    .padding(5)
+                    .column(optionsText, 30)
+                    .column(option.description || '')
+                    .fill()
+                    .output();
+                if (option.argument) {
+                    // 设置项参数说明
+                    new Line()
+                    .padding(9)
+                    .column(`<${option.argument.name}>`, 26)
+                    .column(option.argument.description || '')
+                    .fill()
+                    .output();
+                }
             }
         }
     }
@@ -168,7 +262,7 @@ export class Erii {
     start() {
         for (const key of Object.keys(this.parsedArguments)) {
             if (key in this.commands) {
-                this.exec(key, this.parsedArguments[key]);
+                this.exec(key);
             }
         }
         for (const key of this.parsedArguments['_']) {
@@ -183,12 +277,22 @@ export class Erii {
      * @param command 
      * @param extraArguments 
      */
-    private exec(command, ...extraArguments) {
+    private exec(command) {
         if (this.commands[command].redirect) {
             // 别名重定向
-            this.exec(this.commands[command].redirect, ...extraArguments);
+            this.exec(this.commands[command].redirect);
         } else {
-            this.commands[command].handler(this.commandCtx(command), ...extraArguments);
+            // 传递绑定的设置及通用设置
+            const options = {};
+            const bandOptions = this.commands[command].options.concat(this.commonOptions);
+            for (const option of bandOptions) {
+                for (const name of option.name) {
+                    if (name in this.parsedArguments) {
+                        options[name] = this.parsedArguments[name];
+                    }
+                }
+            }
+            this.commands[command].handler(this.commandCtx(command), options);
         }
     }
 

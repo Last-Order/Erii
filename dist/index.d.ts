@@ -1,10 +1,17 @@
 export interface Command {
     name: string | string[];
     description?: string;
-    argumentDescription?: ArgumentDescription;
+    argument?: argument;
     alias?: string[];
     redirect?: string;
-    handler?: (ctx: CommandCtx, ...extraArguments) => any;
+    options?: Option[];
+    handler?: (ctx: CommandCtx, options?: object) => any;
+}
+export interface Option {
+    name: string | string[];
+    description?: string;
+    command?: string;
+    argument?: argument;
 }
 export interface CommandMap {
     [key: string]: Command;
@@ -14,7 +21,7 @@ export interface CommandCtx {
     showHelp: () => void;
     getArgument: (commandName: string) => string;
 }
-export interface ArgumentDescription {
+export interface argument {
     name: string;
     description: string;
 }
@@ -27,8 +34,19 @@ export declare class Erii {
     private version;
     private name;
     commands: CommandMap;
+    commonOptions: Option[];
     constructor();
+    /**
+     * 绑定命令处理函数
+     * @param config
+     * @param handler
+     */
     bind(config: Command, handler: (ctx: CommandCtx, ...extraArguments) => any): void;
+    /**
+     * 增加设置项
+     * @param config
+     */
+    addOption(config: Option): void;
     /**
      *
      * @param command
@@ -59,7 +77,7 @@ export declare class Erii {
      * @param command
      * @param extraArguments
      */
-    private exec(command, ...extraArguments);
+    private exec(command);
     /**
      * 获得命令的参数
      * @param commandName
