@@ -1,7 +1,7 @@
 export interface Command {
     name: string | string[];
     description?: string;
-    argument?: argument;
+    argument?: Argument;
     alias?: string[];
     redirect?: string;
     options?: Option[];
@@ -11,7 +11,7 @@ export interface Option {
     name: string | string[];
     description?: string;
     command?: string;
-    argument?: argument;
+    argument?: Argument;
 }
 export interface CommandMap {
     [key: string]: Command;
@@ -21,9 +21,10 @@ export interface CommandCtx {
     showHelp: () => void;
     getArgument: (commandName: string) => string;
 }
-export interface argument {
+export interface Argument {
     name: string;
     description: string;
+    validate: string | ((value: any) => boolean);
 }
 export declare class Erii {
     rawArguments: string[];
@@ -35,6 +36,7 @@ export declare class Erii {
     private name;
     commands: CommandMap;
     commonOptions: Option[];
+    validator: any;
     constructor();
     /**
      * 绑定命令处理函数
@@ -78,6 +80,7 @@ export declare class Erii {
      * @param extraArguments
      */
     private exec(command);
+    validateArgument(argumentValue: any, argument: Argument): any;
     /**
      * 获得命令的参数
      * @param commandName

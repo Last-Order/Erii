@@ -104,3 +104,49 @@ Options:
      --verbose, debug <level>      show verbose output
          <level>                   level of verbose output
 ```
+
+**Argument Validation**
+
+Argument validation are based on [validator.js](https://github.com/chriso/validator.js/).
+
+`Erii.validator` points to a `validator` exported by `validator.js`.
+
+Erii can validate arguments automatically.
+
+Define the validate methods in `argument` parameter.
+
+```JavaScript
+Erii.addOption({
+    name: ['verbose', 'debug'],
+    description: 'show verbose output',
+    argument: {
+        name: 'level',
+        description: 'level of verbose output',
+        validate: 'isInt'
+    }
+});
+```
+
+`validate` can also be a function, for example:
+
+```JavaScript
+Erii.addOption({
+    name: ['verbose', 'debug'],
+    description: 'show verbose output',
+    argument: {
+        name: 'level',
+        description: 'level of verbose output',
+        validate: (value) => Erii.validator.isInt(value)
+    }
+});
+```
+
+`argument.validate` works in both command and option definitions.
+
+**Example Output for Argument Validation**
+
+```
+PS D:\Git\erii.test> node index.js --help --verbose f
+Argument validation failed for option 'verbose'.
+<level> should be a/an Int.
+```

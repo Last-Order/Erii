@@ -1,13 +1,14 @@
 import { BADNAME } from "dns";
 
 const minimist = require('minimist');
-const CLI = require('clui'),
-    clc = require('cli-color');
+const CLI = require('clui'), clc = require('cli-color');
+const chalk = require('chalk');
+const validator = require('validator');
 
 export interface Command {
     name: string | string[];
     description?: string;
-    argument?: argument,
+    argument?: Argument,
     alias?: string[],
     redirect?: string;
     options?: Option[];
@@ -18,7 +19,7 @@ export interface Option {
     name: string | string[];
     description?: string;
     command?: string;
-    argument?: argument,
+    argument?: Argument,
 }
 
 export interface CommandMap {
@@ -31,9 +32,10 @@ export interface CommandCtx {
     getArgument: (commandName: string) => string;
 }
 
-export interface argument {
+export interface Argument {
     name: string;
     description: string;
+    validate: string | ((value: any) => boolean);
 }
 
 export class Erii {
@@ -47,10 +49,12 @@ export class Erii {
 
     commands: CommandMap = {};
     commonOptions: Option[] = [];
+    validator: any;
  
     constructor() {
         this.rawArguments = process.argv.slice(2);
         this.parsedArguments = minimist(process.argv.slice(2));
+        this.validator = validator;
 
         // 不响应-后第二个字符起的命令
         for (const key of Object.keys(this.parsedArguments)) {
@@ -67,7 +71,7 @@ export class Erii {
      */
     bind(config: Command, handler: (ctx: CommandCtx, ...extraArguments) => any) {
         if (config.name === undefined) {
-            return console.error("无效命令绑定，忽略");
+            return console.error(chalk.red("Invalid command binding, ignored."));
         }
 
         const { name, description, argument } = config;
@@ -104,7 +108,7 @@ export class Erii {
             this.commonOptions.push(config);
         } else {
             if (!(config.command in this.commands)){
-                return console.error(`Command for option ${config.name.join(', ')} not found, ignored`);
+                return console.error(chalk.red(`Command for option [${config.name.join(', ')}] not found, ignored.`));
             } 
             this.commands[config.command].options.push(config);
         }
@@ -288,11 +292,46 @@ export class Erii {
             for (const option of bandOptions) {
                 for (const name of option.name) {
                     if (name in this.parsedArguments) {
-                        options[name] = this.parsedArguments[name];
+                        // do option argument validation
+                        if (this.validateArgument(this.parsedArguments[name], option.argument)) {
+                            options[name] = this.parsedArguments[name];
+                        } else {
+                            console.error(chalk.red(`Argument validation failed for option '${name}'.`));
+                            if (typeof option.argument.validate === 'string') {
+                                console.error(chalk.red(`<${option.argument.name}> should be a/an ${option.argument.validate.slice(2)}.`))
+                            }
+                        }
                     }
                 }
             }
-            this.commands[command].handler(this.commandCtx(command), options);
+            // do command argument validation
+            if (this.validateArgument(this.parsedArguments[command], this.commands[command].argument)) {
+                this.commands[command].handler(this.commandCtx(command), options);
+            } else {
+                console.error(chalk.red(`Argument validation failed for command ${command}`));
+                const validateMethod = this.commands[command].argument.validate;
+                if (typeof validateMethod === 'string') {
+                    console.error(chalk.red(`<${this.commands[command].argument.name}> should be a/an ${validateMethod.slice(2)}.`))
+                }
+            }
+        }
+    }
+
+    validateArgument(argumentValue: any, argument: Argument) {
+        if (!argument || !argument.validate) {
+            // no need to validate
+            return true;
+        }
+        if (typeof argument.validate === "string") {
+            if (argument.validate in this.validator) {
+                return this.validator[argument.validate](argumentValue.toString());
+            } else {
+                console.error(chalk.red(`Unknown validate method for ${argument.name}.`));
+                return true;
+            }
+        } else {
+            // custom validator
+            return argument.validate(argumentValue);
         }
     }
 
@@ -314,11 +353,11 @@ export class Erii {
                             return this.parsedArguments[alias] as string;
                         }
                     }
-                    console.error(`Command ${commandName} not found.`);
+                    console.error(chalk.red(`Command ${commandName} not found.`));
                 }
             }
         } else {
-            console.error(`Command ${commandName} not found.`);
+            console.error(chalk.red(`Command ${commandName} not found.`));
         }
     }
 
