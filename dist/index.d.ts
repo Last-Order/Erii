@@ -37,6 +37,7 @@ export declare class Erii {
     commands: CommandMap;
     commonOptions: Option[];
     validator: any;
+    alwaysHandler: () => any;
     constructor();
     /**
      * 绑定命令处理函数
@@ -44,6 +45,11 @@ export declare class Erii {
      * @param handler
      */
     bind(config: Command, handler: (ctx: CommandCtx, ...extraArguments) => any): void;
+    /**
+     * 总是执行
+     * @param handler
+     */
+    always(handler: () => any): void;
     /**
      * 增加设置项
      * @param config

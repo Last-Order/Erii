@@ -52,6 +52,13 @@ class Erii {
         }
     }
     /**
+     * 总是执行
+     * @param handler
+     */
+    always(handler) {
+        this.alwaysHandler = handler;
+    }
+    /**
      * 增加设置项
      * @param config
      */
@@ -214,6 +221,9 @@ class Erii {
      * 启动
      */
     start() {
+        if (this.alwaysHandler) {
+            this.alwaysHandler();
+        }
         for (const key of Object.keys(this.parsedArguments)) {
             if (key in this.commands) {
                 this.exec(key);

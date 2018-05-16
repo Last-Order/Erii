@@ -50,6 +50,7 @@ export class Erii {
     commands: CommandMap = {};
     commonOptions: Option[] = [];
     validator: any;
+    alwaysHandler: () => any;
  
     constructor() {
         this.rawArguments = process.argv.slice(2);
@@ -96,6 +97,14 @@ export class Erii {
                 };
             }
         }
+    }
+
+    /**
+     * 总是执行
+     * @param handler 
+     */
+    always(handler: () => any) {
+        this.alwaysHandler = handler;
     }
 
     /**
@@ -264,6 +273,9 @@ export class Erii {
      * 启动
      */
     start() {
+        if (this.alwaysHandler) {
+            this.alwaysHandler();
+        }
         for (const key of Object.keys(this.parsedArguments)) {
             if (key in this.commands) {
                 this.exec(key);
