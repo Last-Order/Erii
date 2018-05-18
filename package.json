@@ -9,14 +9,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Last-Order/haruka.git"
+    "url": "git+https://github.com/Last-Order/erii.git"
   },
   "author": "",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/Last-Order/haruka/issues"
+    "url": "https://github.com/Last-Order/erii/issues"
   },
-  "homepage": "https://github.com/Last-Order/haruka#readme",
+  "homepage": "https://github.com/Last-Order/erii#readme",
   "dependencies": {
     "chalk": "^2.4.1",
     "clui": "^0.3.6",
