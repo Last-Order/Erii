@@ -19,12 +19,12 @@ export interface CommandMap {
 export interface CommandCtx {
     showVersion: () => void;
     showHelp: () => void;
-    getArgument: (commandName: string) => string;
+    getArgument: (commandName?: string) => string;
 }
 export interface Argument {
     name: string;
     description: string;
-    validate: string | ((value: any) => boolean);
+    validate?: string | ((value: any) => boolean);
 }
 export declare class Erii {
     rawArguments: string[];
