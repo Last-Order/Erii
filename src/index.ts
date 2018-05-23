@@ -1,6 +1,6 @@
 import { BADNAME } from "dns";
 
-const minimist = require('minimist');
+const yargs = require('yargs-parser');
 const CLI = require('clui'), clc = require('cli-color');
 const chalk = require('chalk');
 const validator = require('validator');
@@ -54,7 +54,7 @@ export class Erii {
  
     constructor() {
         this.rawArguments = process.argv.slice(2);
-        this.parsedArguments = minimist(process.argv.slice(2));
+        this.parsedArguments = yargs(process.argv.slice(2));
         this.validator = validator;
 
         // 不响应-后第二个字符起的命令
