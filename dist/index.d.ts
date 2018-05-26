@@ -24,7 +24,7 @@ export interface CommandCtx {
 export interface Argument {
     name: string;
     description: string;
-    validate?: string | ((value: any) => boolean);
+    validate?: string | ((value: any, logger: (message: string) => void) => boolean);
 }
 export declare class Erii {
     rawArguments: string[];
@@ -37,7 +37,8 @@ export declare class Erii {
     commands: CommandMap;
     commonOptions: Option[];
     validator: any;
-    alwaysHandler: () => any;
+    alwaysHandler: () => void;
+    defaultHandler: () => void;
     constructor();
     /**
      * 绑定命令处理函数
@@ -50,6 +51,10 @@ export declare class Erii {
      * @param handler
      */
     always(handler: () => any): void;
+    /**
+     *
+     */
+    default(handler: () => any): void;
     /**
      * 增加设置项
      * @param config

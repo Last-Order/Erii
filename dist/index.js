@@ -59,6 +59,12 @@ class Erii {
         this.alwaysHandler = handler;
     }
     /**
+     *
+     */
+    default(handler) {
+        this.defaultHandler = handler;
+    }
+    /**
      * 增加设置项
      * @param config
      */
@@ -224,6 +230,9 @@ class Erii {
         if (this.alwaysHandler) {
             this.alwaysHandler();
         }
+        if (this.parsedArguments['_'].length === 0 && Object.keys(this.parsedArguments).length === 1) {
+            this.defaultHandler();
+        }
         for (const key of Object.keys(this.parsedArguments)) {
             if (key in this.commands) {
                 this.exec(key);
@@ -294,7 +303,9 @@ class Erii {
         }
         else {
             // custom validator
-            return argument.validate(argumentValue);
+            return argument.validate(argumentValue, (message) => {
+                console.log(chalk.red(message));
+            });
         }
     }
     /**

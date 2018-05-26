@@ -1,5 +1,3 @@
-import { BADNAME } from "dns";
-
 const yargs = require('yargs-parser');
 const CLI = require('clui'), clc = require('cli-color');
 const chalk = require('chalk');
@@ -35,7 +33,7 @@ export interface CommandCtx {
 export interface Argument {
     name: string;
     description: string;
-    validate?: string | ((value: any) => boolean);
+    validate?: string | ((value: any, logger: (message: string) => void) => boolean);
 }
 
 export class Erii {
@@ -50,7 +48,8 @@ export class Erii {
     commands: CommandMap = {};
     commonOptions: Option[] = [];
     validator: any;
-    alwaysHandler: () => any;
+    alwaysHandler: () => void;
+    defaultHandler: () => void;
  
     constructor() {
         this.rawArguments = process.argv.slice(2);
@@ -105,6 +104,13 @@ export class Erii {
      */
     always(handler: () => any) {
         this.alwaysHandler = handler;
+    }
+
+    /**
+     * 
+     */
+    default(handler: () => any) {
+        this.defaultHandler = handler;
     }
 
     /**
@@ -276,6 +282,9 @@ export class Erii {
         if (this.alwaysHandler) {
             this.alwaysHandler();
         }
+        if (this.parsedArguments['_'].length === 0 && Object.keys(this.parsedArguments).length === 1) {
+            this.defaultHandler();
+        }
         for (const key of Object.keys(this.parsedArguments)) {
             if (key in this.commands) {
                 this.exec(key);
@@ -343,7 +352,9 @@ export class Erii {
             }
         } else {
             // custom validator
-            return argument.validate(argumentValue);
+            return argument.validate(argumentValue, (message: string) => {
+                console.log(chalk.red(message))
+            });
         }
     }
 
