@@ -230,8 +230,10 @@ class Erii {
         if (this.alwaysHandler) {
             this.alwaysHandler();
         }
-        if (this.parsedArguments['_'].length === 0 && Object.keys(this.parsedArguments).length === 1) {
-            this.defaultHandler();
+        if (this.defaultHandler) {
+            if (this.parsedArguments['_'].length === 0 && Object.keys(this.parsedArguments).length === 1) {
+                this.defaultHandler();
+            }
         }
         for (const key of Object.keys(this.parsedArguments)) {
             if (key in this.commands) {
