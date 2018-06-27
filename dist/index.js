@@ -265,7 +265,7 @@ class Erii {
                     if (name in this.parsedArguments) {
                         // do option argument validation
                         if (this.validateArgument(this.parsedArguments[name], option.argument)) {
-                            options[name] = this.parsedArguments[name];
+                            options[option.name[0]] = this.parsedArguments[name];
                         }
                         else {
                             console.error(chalk.red(`Argument validation failed for option '${name}'.`));
