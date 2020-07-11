@@ -38,9 +38,9 @@ export interface Argument {
 
 export class Erii {
     rawArguments: string[];
-    parsedArguments: { 
+    parsedArguments: {
         _?: string[],
-        [key: string]: string | string[]; 
+        [key: string]: string | string[];
     } = {};
     private version: string = "1.0.0";
     private name: string = "Erii";
@@ -50,7 +50,7 @@ export class Erii {
     validator: any;
     alwaysHandler: () => void;
     defaultHandler: () => void;
- 
+
     constructor() {
         this.rawArguments = process.argv.slice(2);
         this.parsedArguments = yargs(process.argv.slice(2));
@@ -66,8 +66,8 @@ export class Erii {
 
     /**
      * 绑定命令处理函数
-     * @param config 
-     * @param handler 
+     * @param config
+     * @param handler
      */
     bind(config: Command, handler: (ctx: CommandCtx, ...extraArguments) => any) {
         if (config.name === undefined) {
@@ -100,14 +100,14 @@ export class Erii {
 
     /**
      * 总是执行
-     * @param handler 
+     * @param handler
      */
     always(handler: () => any) {
         this.alwaysHandler = handler;
     }
 
     /**
-     * 
+     *
      */
     default(handler: () => any) {
         this.defaultHandler = handler;
@@ -115,7 +115,7 @@ export class Erii {
 
     /**
      * 增加设置项
-     * @param config 
+     * @param config
      */
     addOption(config: Option) {
         config.name = Array.isArray(config.name) ? config.name : [config.name];
@@ -124,14 +124,14 @@ export class Erii {
         } else {
             if (!(config.command in this.commands)){
                 return console.error(chalk.red(`Command for option [${config.name.join(', ')}] not found, ignored.`));
-            } 
+            }
             this.commands[config.command].options.push(config);
         }
     }
 
     /**
-     * 
-     * @param command 
+     *
+     * @param command
      */
     private commandCtx(command: string): CommandCtx {
         return {
@@ -149,7 +149,7 @@ export class Erii {
 
     /**
      * 设定基础信息
-     * @param metaInfo 
+     * @param metaInfo
      */
     setMetaInfo({
         version = "",
@@ -172,9 +172,8 @@ export class Erii {
             .column('Commands', 30, [clc.cyan])
             .column('Description', 30, [clc.cyan])
             .column('Alias', 20, [clc.cyan])
-            .fill()
             .output();
-        new Line().fill().output();
+        new Line().output();
         for (const key of Object.keys(this.commands)) {
             if (this.commands[key].redirect) {
                 continue;
@@ -193,7 +192,6 @@ export class Erii {
                 .column(commandText, 30)
                 .column(this.commands[key].description, 30)
                 .column(aliasText, 20)
-                .fill()
                 .output();
             if (this.commands[key].argument) {
                 // 参数说明
@@ -201,7 +199,6 @@ export class Erii {
                     .padding(9)
                     .column(`<${this.commands[key].argument.name}>`, 26)
                     .column(this.commands[key].argument.description, 30)
-                    .fill()
                     .output();
             }
             if (this.commands[key].options.length > 0) {
@@ -218,7 +215,6 @@ export class Erii {
                         .padding(9)
                         .column(optionsText, 26)
                         .column(option.description || '')
-                        .fill()
                         .output();
                     if (option.argument) {
                         // 设置项参数说明
@@ -226,13 +222,12 @@ export class Erii {
                         .padding(13)
                         .column(`<${option.argument.name}>`, 22)
                         .column(option.argument.description || '')
-                        .fill()
                         .output();
                     }
                 }
             }
         }
-        new Line().fill().output();
+        new Line().output();
         if (this.commonOptions.length > 0) {
             // 通用设置项说明
             console.log('Options:\n');
@@ -240,7 +235,6 @@ export class Erii {
             .padding(5)
             .column('Options', 30, [clc.cyan])
             .column('Description', 30, [clc.cyan])
-            .fill()
             .output();
             for (const option of this.commonOptions) {
                 let optionsText = '';
@@ -254,7 +248,6 @@ export class Erii {
                     .padding(5)
                     .column(optionsText, 30)
                     .column(option.description || '')
-                    .fill()
                     .output();
                 if (option.argument) {
                     // 设置项参数说明
@@ -262,7 +255,6 @@ export class Erii {
                     .padding(9)
                     .column(`<${option.argument.name}>`, 26)
                     .column(option.argument.description || '')
-                    .fill()
                     .output();
                 }
             }
@@ -301,8 +293,8 @@ export class Erii {
 
     /**
      * 执行命令担当函数
-     * @param command 
-     * @param extraArguments 
+     * @param command
+     * @param extraArguments
      */
     private exec(command) {
         if (this.commands[command].redirect) {
@@ -363,7 +355,7 @@ export class Erii {
     /**
      * 获得命令的参数
      * @param commandName
-     * @param followRedirect 是否遵循重定向 
+     * @param followRedirect 是否遵循重定向
      */
     getArgument(commandName: string, followRedirect = true): string {
         if (this.commands[commandName]) {
