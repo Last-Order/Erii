@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.Erii = void 0;
 const yargs = require('yargs-parser');
 const CLI = require('clui'), clc = require('cli-color');
 const chalk = require('chalk');
@@ -117,9 +118,8 @@ class Erii {
             .column('Commands', 30, [clc.cyan])
             .column('Description', 30, [clc.cyan])
             .column('Alias', 20, [clc.cyan])
-            .fill()
             .output();
-        new Line().fill().output();
+        new Line().output();
         for (const key of Object.keys(this.commands)) {
             if (this.commands[key].redirect) {
                 continue;
@@ -138,7 +138,6 @@ class Erii {
                 .column(commandText, 30)
                 .column(this.commands[key].description, 30)
                 .column(aliasText, 20)
-                .fill()
                 .output();
             if (this.commands[key].argument) {
                 // 参数说明
@@ -146,7 +145,6 @@ class Erii {
                     .padding(9)
                     .column(`<${this.commands[key].argument.name}>`, 26)
                     .column(this.commands[key].argument.description, 30)
-                    .fill()
                     .output();
             }
             if (this.commands[key].options.length > 0) {
@@ -165,7 +163,6 @@ class Erii {
                         .padding(9)
                         .column(optionsText, 26)
                         .column(option.description || '')
-                        .fill()
                         .output();
                     if (option.argument) {
                         // 设置项参数说明
@@ -173,13 +170,12 @@ class Erii {
                             .padding(13)
                             .column(`<${option.argument.name}>`, 22)
                             .column(option.argument.description || '')
-                            .fill()
                             .output();
                     }
                 }
             }
         }
-        new Line().fill().output();
+        new Line().output();
         if (this.commonOptions.length > 0) {
             // 通用设置项说明
             console.log('Options:\n');
@@ -187,7 +183,6 @@ class Erii {
                 .padding(5)
                 .column('Options', 30, [clc.cyan])
                 .column('Description', 30, [clc.cyan])
-                .fill()
                 .output();
             for (const option of this.commonOptions) {
                 let optionsText = '';
@@ -203,7 +198,6 @@ class Erii {
                     .padding(5)
                     .column(optionsText, 30)
                     .column(option.description || '')
-                    .fill()
                     .output();
                 if (option.argument) {
                     // 设置项参数说明
@@ -211,7 +205,6 @@ class Erii {
                         .padding(9)
                         .column(`<${option.argument.name}>`, 26)
                         .column(option.argument.description || '')
-                        .fill()
                         .output();
                 }
             }

@@ -45,7 +45,7 @@ export declare class Erii {
      * @param config
      * @param handler
      */
-    bind(config: Command, handler: (ctx: CommandCtx, ...extraArguments) => any): void;
+    bind(config: Command, handler: (ctx: CommandCtx, ...extraArguments: any[]) => any): void;
     /**
      * 总是执行
      * @param handler
@@ -64,12 +64,12 @@ export declare class Erii {
      *
      * @param command
      */
-    private commandCtx(command);
+    private commandCtx;
     /**
      * 设定基础信息
      * @param metaInfo
      */
-    setMetaInfo({version, name}?: {
+    setMetaInfo({ version, name }?: {
         version?: string;
         name?: string;
     }): void;
@@ -90,7 +90,7 @@ export declare class Erii {
      * @param command
      * @param extraArguments
      */
-    private exec(command);
+    private exec;
     validateArgument(argumentValue: any, argument: Argument): any;
     /**
      * 获得命令的参数
