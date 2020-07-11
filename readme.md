@@ -9,7 +9,7 @@
 ## Usage
 
 ```JavaScript
-const Erii = require('erii');
+const Erii = require('erii').default;
 
 Erii.setMetaInfo({
     version: '0.0.1',
