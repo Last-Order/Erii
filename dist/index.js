@@ -1,6 +1,5 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Erii = void 0;
 const yargs = require('yargs-parser');
 const CLI = require('clui'), clc = require('cli-color');
 const chalk = require('chalk');
