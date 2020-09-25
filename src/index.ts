@@ -184,8 +184,8 @@ export class Erii {
                 commandText += ` <${this.commands[key].argument.name}>`;
             }
             if (this.commands[key].alias.length > 0) {
-                aliasText += '--';
-                aliasText += this.commands[key].alias.join(' / --');
+                const aliasWithPrefixes = this.commands[key].alias.map(alias => alias.length === 1 ? `-${alias}` : `--${alias}`);
+                aliasText += aliasWithPrefixes.join(' / ');
             }
             new Line()
                 .padding(5)
