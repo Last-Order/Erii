@@ -9,10 +9,6 @@
         "experimentalDecorators": true,
         "newLine": "lf"
     },
-    "include": [
-        "src/**/*"
-    ],
-    "exclude": [
-        "dist"
-    ]
+    "include": ["src/**/*"],
+    "exclude": ["dist"]
 }

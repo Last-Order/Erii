@@ -2,7 +2,7 @@ const yargs = require('yargs-parser');
 const CLI = require('clui'), clc = require('cli-color');
 const chalk = require('chalk');
 const validator = require('validator');
-
+import { createCamelProxifiedObject } from "./utils/convert";
 export interface Command {
     name: string | string[];
     description?: string;
@@ -321,7 +321,7 @@ export class Erii {
             }
             // do command argument validation
             if (this.validateArgument(this.parsedArguments[command], this.commands[command].argument)) {
-                this.commands[command].handler(this.commandCtx(command), options);
+                this.commands[command].handler(this.commandCtx(command), createCamelProxifiedObject(options));
             } else {
                 console.error(chalk.red(`Argument validation failed for command ${command}`));
                 const validateMethod = this.commands[command].argument.validate;
