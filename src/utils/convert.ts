@@ -20,7 +20,7 @@ export function convertObjectKey(before: { [index: string]: any }) {
 export function createCamelProxifiedObject(before: { [index: string]: any }) {
     return new Proxy(before, {
         get: (target: typeof before, key: string) => {
-            return target[key] || target[toKebabCase(key)];
+            return target[key] ?? target[toKebabCase(key)];
         },
     });
 }
