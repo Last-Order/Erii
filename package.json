@@ -20,7 +20,7 @@
   "dependencies": {
     "chalk": "^2.4.1",
     "clui": "^0.3.6",
-    "validator": "^10.2.0",
+    "validator": "^13.7.0",
     "yargs-parser": "^13.1.2"
   },
   "devDependencies": {
