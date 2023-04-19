@@ -53,7 +53,11 @@ export class Erii {
 
     constructor() {
         this.rawArguments = process.argv.slice(2);
-        this.parsedArguments = yargs(process.argv.slice(2));
+        this.parsedArguments = yargs(process.argv.slice(2), {
+            configuration: {
+                "boolean-negation": false
+            }
+        });
         this.validator = validator;
 
         // 不响应-后第二个字符起的命令
