@@ -15,7 +15,7 @@ npm install erii
 Define your commands and options, register handlers, then call `start()`.
 
 ```ts
-import Erii from 'erii';
+import Erii from "erii";
 
 type CLI = {
     commonOptions: {
@@ -23,7 +23,7 @@ type CLI = {
     };
     commands: {
         build: {
-            aliases: 'b';
+            aliases: "b";
             argument: string;
             options: {
                 outDir?: string;
@@ -33,41 +33,44 @@ type CLI = {
         serve: {
             options: {
                 port?: number;
-                mode?: 'dev' | 'prod';
+                mode?: "dev" | "prod";
             };
         };
     };
 };
 
 const cli = new Erii<CLI>();
-cli.setMetaInfo({ name: 'example', version: '1.0.0' });
+cli.setMetaInfo({ name: "example", version: "1.0.0" });
 
-cli.bind({
-    name: ['build', 'b'],
-    description: 'Build the project',
-    argument: { name: 'path', description: 'Source directory' },
-}, (ctx, options) => {
-    const path = ctx.getArgument(); // string | undefined
-    const output = options.outDir; // string | undefined
-    const verbose = options.verbose; // boolean | undefined
-    console.log({ path, output, verbose });
-});
+cli.bind(
+    {
+        name: ["build", "b"],
+        description: "Build the project",
+        argument: { name: "path", description: "Source directory" },
+    },
+    (ctx, options) => {
+        const path = ctx.getArgument(); // string | undefined
+        const output = options.outDir; // string | undefined
+        const verbose = options.verbose; // boolean | undefined
+        console.log({ path, output, verbose });
+    },
+);
 
-cli.bind({ name: 'serve' }, (_, options) => {
+cli.bind({ name: "serve" }, (_, options) => {
     console.log(options.port, options.mode);
 });
 
-cli.addOption({ name: ['verbose', 'v'] });
-cli.addOption({ command: 'build', name: ['outDir', 'out-dir', 'o'] });
-cli.addOption({ command: 'b', name: 'minify' });
-cli.addOption({ command: 'serve', name: 'port' });
+cli.addOption({ name: ["verbose", "v"] });
+cli.addOption({ command: "build", name: ["outDir", "out-dir", "o"] });
+cli.addOption({ command: "b", name: "minify" });
+cli.addOption({ command: "serve", name: "port" });
 cli.addOption({
-    command: 'serve',
-    name: 'mode',
+    command: "serve",
+    name: "mode",
     argument: {
-        name: 'mode',
-        description: 'Server mode',
-        validate: value => value === 'dev' || value === 'prod',
+        name: "mode",
+        description: "Server mode",
+        validate: (value) => value === "dev" || value === "prod",
     },
 });
 
@@ -92,7 +95,7 @@ node index.js -b src -o dist -v
 Use `ctx.getArgument()` inside a handler, or look up a command by name:
 
 ```ts
-const path = cli.getArgument('build');
+const path = cli.getArgument("build");
 if (path !== undefined) {
     console.log(path);
 }
@@ -104,9 +107,9 @@ Use `argument.validate` to check values with a validator.js method:
 
 ```ts
 cli.addOption({
-    command: 'serve',
-    name: 'port',
-    argument: { name: 'port', description: 'Listening port', validate: 'isInt' },
+    command: "serve",
+    name: "port",
+    argument: { name: "port", description: "Listening port", validate: "isInt" },
 });
 ```
 
@@ -114,12 +117,12 @@ To use a custom validator, return `true` for accepted input:
 
 ```ts
 cli.addOption({
-    command: 'serve',
-    name: 'port',
+    command: "serve",
+    name: "port",
     argument: {
-        name: 'port',
-        description: 'Listening port',
-        validate: value => typeof value === 'number' && value > 0 && value <= 65535,
+        name: "port",
+        description: "Listening port",
+        validate: (value) => typeof value === "number" && value > 0 && value <= 65535,
     },
 });
 ```
@@ -130,7 +133,7 @@ Register lifecycle handlers before calling `start()`:
 
 ```ts
 cli.always(() => {
-    console.log('Starting');
+    console.log("Starting");
 });
 
 cli.default(() => {

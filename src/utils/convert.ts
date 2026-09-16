@@ -3,7 +3,7 @@ export function toCamelCase(str: string): string {
 }
 
 export function toKebabCase(str: string): string {
-    return (str[0]?.toLowerCase() ?? '') + str.slice(1).replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`);
+    return (str[0]?.toLowerCase() ?? "") + str.slice(1).replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`);
 }
 
 export function convertObjectKey<T>(before: Record<string, T>): Record<string, T> {
@@ -14,12 +14,12 @@ export function createCamelProxifiedObject<T extends object>(before: T): T {
     return new Proxy(before, {
         get(target, key, receiver): unknown {
             const value: unknown = Reflect.get(target, key, receiver);
-            return typeof key === 'string' ? value ?? Reflect.get(target, toKebabCase(key), receiver) : value;
+            return typeof key === "string" ? (value ?? Reflect.get(target, toKebabCase(key), receiver)) : value;
         },
         set(target, key, value: unknown, receiver): boolean {
             if (
-                typeof key === 'string' &&
-                !key.includes('-') &&
+                typeof key === "string" &&
+                !key.includes("-") &&
                 Reflect.get(target, key, receiver) == null &&
                 Reflect.get(target, toKebabCase(key), receiver) != null
             ) {

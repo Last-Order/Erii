@@ -1,8 +1,8 @@
-import yargs from 'yargs-parser';
-import chalk from 'chalk';
-import validator from 'validator';
-import { renderHelp } from './help.js';
-import { createCamelProxifiedObject } from './utils/convert.js';
+import yargs from "yargs-parser";
+import chalk from "chalk";
+import validator from "validator";
+import { renderHelp } from "./help.js";
+import { createCamelProxifiedObject } from "./utils/convert.js";
 import type {
     Argument,
     ArgumentValue,
@@ -22,7 +22,7 @@ import type {
     TypedCommand,
     TypedCommandHandler,
     TypedOption,
-} from './types.js';
+} from "./types.js";
 
 export class Erii<S extends EriiSchema<S> = never> {
     rawArguments: string[];
@@ -40,14 +40,14 @@ export class Erii<S extends EriiSchema<S> = never> {
         this.rawArguments = process.argv.slice(2);
         this.parsedArguments = yargs(process.argv.slice(2), {
             configuration: {
-                "boolean-negation": false
-            }
+                "boolean-negation": false,
+            },
         });
         this.validator = validator;
 
         // 不响应-后第二个字符起的命令
         for (const key of Object.keys(this.parsedArguments)) {
-            if (key !== "_" && (!this.rawArguments.includes('--' + key) && !this.rawArguments.includes('-' + key))) {
+            if (key !== "_" && !this.rawArguments.includes("--" + key) && !this.rawArguments.includes("-" + key)) {
                 delete this.parsedArguments[key];
             }
         }
@@ -72,7 +72,7 @@ export class Erii<S extends EriiSchema<S> = never> {
 
         const [mainCommand, ...aliases] = Array.isArray(name) ? name : [name];
         if (!mainCommand) {
-            console.error(chalk.red('Invalid command binding, ignored.'));
+            console.error(chalk.red("Invalid command binding, ignored."));
             return;
         }
 
@@ -82,14 +82,14 @@ export class Erii<S extends EriiSchema<S> = never> {
             argument,
             alias: aliases,
             options: [],
-            handler
+            handler,
         };
 
         if (Array.isArray(name)) {
             for (const alias of aliases) {
                 this.commands[alias] = {
                     name: alias,
-                    redirect: mainCommand
+                    redirect: mainCommand,
                 };
             }
         }
@@ -121,8 +121,8 @@ export class Erii<S extends EriiSchema<S> = never> {
         if (!config.command) {
             this.commonOptions.push(config);
         } else {
-            if (!(config.command in this.commands)){
-                return console.error(chalk.red(`Command for option [${config.name.join(', ')}] not found, ignored.`));
+            if (!(config.command in this.commands)) {
+                return console.error(chalk.red(`Command for option [${config.name.join(", ")}] not found, ignored.`));
             }
             const command = this.commands[config.command];
             const target = command?.redirect ? this.commands[command.redirect] : command;
@@ -140,18 +140,15 @@ export class Erii<S extends EriiSchema<S> = never> {
             },
             getArgument: (commandName: string = command) => {
                 return this.readArgument(commandName);
-            }
-        }
+            },
+        };
     }
 
     /**
      * 设定基础信息
      * @param metaInfo
      */
-    setMetaInfo({
-        version = "",
-        name = ""
-    }: MetaInfo = {}): void {
+    setMetaInfo({ version = "", name = "" }: MetaInfo = {}): void {
         this.version = version;
         this.name = name;
     }
@@ -178,7 +175,7 @@ export class Erii<S extends EriiSchema<S> = never> {
             this.alwaysHandler();
         }
         if (this.defaultHandler) {
-            if (this.parsedArguments['_'].length === 0 && Object.keys(this.parsedArguments).length === 1) {
+            if (this.parsedArguments["_"].length === 0 && Object.keys(this.parsedArguments).length === 1) {
                 this.defaultHandler();
             }
         }
@@ -187,7 +184,7 @@ export class Erii<S extends EriiSchema<S> = never> {
                 this.exec(key);
             }
         }
-        for (const key of this.parsedArguments['_']) {
+        for (const key of this.parsedArguments["_"]) {
             if (key in this.commands) {
                 this.exec(String(key));
             }
@@ -216,7 +213,7 @@ export class Erii<S extends EriiSchema<S> = never> {
                     options[primaryName] = this.parsedArguments[name];
                 } else {
                     console.error(chalk.red(`Argument validation failed for option '${name}'.`));
-                    if (typeof option.argument?.validate === 'string') {
+                    if (typeof option.argument?.validate === "string") {
                         console.error(chalk.red(`<${option.argument.name}> should be a/an ${option.argument.validate.slice(2)}.`));
                     }
                 }
@@ -227,7 +224,7 @@ export class Erii<S extends EriiSchema<S> = never> {
             boundCommand.handler?.(this.commandCtx(command), createCamelProxifiedObject(options));
         } else {
             console.error(chalk.red(`Argument validation failed for command ${command}`));
-            if (typeof boundCommand.argument?.validate === 'string') {
+            if (typeof boundCommand.argument?.validate === "string") {
                 console.error(chalk.red(`<${boundCommand.argument.name}> should be a/an ${boundCommand.argument.validate.slice(2)}.`));
             }
         }
@@ -249,7 +246,7 @@ export class Erii<S extends EriiSchema<S> = never> {
         } else {
             // custom validator
             return argument.validate(argumentValue, (message: string) => {
-                console.log(chalk.red(message))
+                console.log(chalk.red(message));
             });
         }
     }
@@ -274,7 +271,7 @@ export class Erii<S extends EriiSchema<S> = never> {
         const command = this.commands[commandName];
         if (!command) return undefined;
         if (command.redirect && followRedirect) return this.findArgument(command.redirect);
-        if (commandName !== '_' && Object.hasOwn(this.parsedArguments, commandName)) {
+        if (commandName !== "_" && Object.hasOwn(this.parsedArguments, commandName)) {
             return this.parsedArguments[commandName];
         }
         for (const alias of command.alias ?? []) {

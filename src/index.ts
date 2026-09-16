@@ -1,4 +1,4 @@
-import { Erii } from './erii.js';
+import { Erii } from "./erii.js";
 
 export { Erii };
 
@@ -15,6 +15,6 @@ export type {
     TypedCommandOptions,
     TypedOption,
     ValidatorName,
-} from './types.js';
+} from "./types.js";
 
 export default Erii;
