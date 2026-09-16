@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
+import { readFileSync } from 'node:fs';
 import { createErii, captureConsole, captureStdout } from './helpers.mjs';
 
 test('version output uses defaults and resets omitted metadata fields', t => {
@@ -44,6 +45,9 @@ test('help includes command arguments, short/long aliases, scoped and common opt
     app.addOption({ name: 'verbose', description: 'Verbose output' });
     app.showHelp();
     const text = output();
+    // Captured before the help renderer was extracted; preserve spacing and line breaks.
+    const expectedOutput = JSON.parse(readFileSync(new URL('./fixtures/help.json', import.meta.url), 'utf8'));
+    assert.equal(text, expectedOutput);
     for (const expected of [
         'example / 2', '--run <job>', 'Run job', '-r / --execute', '<job>', 'Job identifier',
         '--stop', 'Stop job', '--count, c <times>', 'Repeat job', 'Repeat count',
