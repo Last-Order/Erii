@@ -1,4 +1,4 @@
-import type { ParsedArguments } from "../src/types.js";
+import type { ParsedArguments } from "../src/types";
 import type { Argument, ArgumentValidator, ValidatorName, MetaInfo } from "erii";
 
 const valid: ValidatorName = "isInt";

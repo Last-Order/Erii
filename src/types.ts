@@ -1,9 +1,9 @@
 import type validator from "validator";
 
-/** CLI 解析器可能返回的原始值；泛型声明不会转换这些值。 */
+/** Raw values the CLI parser may return; generic declarations do not convert them. */
 export type ArgumentValue = string | number | boolean | ArgumentValue[] | { [key: string]: ArgumentValue };
 
-/** 内部存储的原始 options，尚未按命令 schema 收窄。 */
+/** Raw options stored internally, before narrowing to a command schema. */
 export type CommandOptions = Record<string, ArgumentValue | undefined>;
 
 export interface ParsedArguments extends CommandOptions {
@@ -14,10 +14,10 @@ export type CommandHandler = (ctx: CommandCtx, options: CommandOptions) => unkno
 
 export type LifecycleHandler = () => unknown;
 
-/** 自定义校验接收原始值，返回 false 表示校验失败。 */
+/** Custom validators receive raw values and return false when validation fails. */
 export type ArgumentValidator = (value: ArgumentValue | undefined, logger: (message: string) => void) => boolean;
 
-/** 只允许可用单个字符串调用、返回 boolean 的 validator.js 方法。 */
+/** Only validator.js methods callable with a single string and returning a boolean are allowed. */
 export type ValidatorName = {
     [K in keyof typeof validator]: (typeof validator)[K] extends (value: string) => boolean ? K : never;
 }[keyof typeof validator];
@@ -27,7 +27,7 @@ export interface MetaInfo {
     name?: string;
 }
 
-/** 内部命令注册记录，也包含别名重定向和运行时 handler。 */
+/** Internal command registration, including alias redirects and runtime handlers. */
 export interface Command {
     name: string | string[];
     description?: string;
@@ -49,14 +49,14 @@ export interface CommandMap {
     [key: string]: Command | undefined;
 }
 
-/** 运行时上下文使用原始值；使用者通过 TypedCommandCtx 获取 schema 类型。 */
+/** The runtime context uses raw values; consumers obtain schema types through TypedCommandCtx. */
 export interface CommandCtx {
     showVersion: () => void;
     showHelp: () => void;
     getArgument: (commandName?: string) => ArgumentValue | undefined;
 }
 
-/** 命令或 option 的参数说明及原有运行时校验规则。 */
+/** Argument metadata and runtime validation rules for a command or option. */
 export interface Argument {
     name: string;
     description: string;
@@ -85,8 +85,8 @@ type DefaultSchema = {
 };
 
 /**
- * 编译期 schema 约束，不参与运行时解析或校验。
- * 按传入 schema 自身的键检查结构，允许具名 interface，且不放宽合法名称。
+ * Compile-time schema constraints, with no role in runtime parsing or validation.
+ * Checks the supplied schema's own keys, supporting named interfaces without widening valid names.
  */
 export interface EriiSchema<Schema = DefaultSchema> {
     commonOptions?: SchemaOptionValues<CommonOptions<Schema>>;
@@ -99,23 +99,23 @@ export type CommandName<Schema extends EriiSchema<Schema>> = Extract<keyof Schem
 
 type CommandAliases<Command> = "aliases" extends keyof Command ? Extract<Command["aliases"], string> : never;
 
-/** 所有允许查找的命令名称，包括 schema 声明的别名。 */
+/** All valid command lookup names, including aliases declared in the schema. */
 export type CommandLookup<Schema extends EriiSchema<Schema>> = {
     [Name in CommandName<Schema>]: Name | CommandAliases<Schema["commands"][Name]>;
 }[CommandName<Schema>];
 
-/** 将主名称或别名还原到 schema 中的命令键。 */
+/** Resolves a primary name or alias to its command key in the schema. */
 type ResolveCommand<Schema extends EriiSchema<Schema>, Lookup extends CommandLookup<Schema>> = {
     [Name in CommandName<Schema>]: Lookup extends Name | CommandAliases<Schema["commands"][Name]> ? Name : never;
 }[CommandName<Schema>];
 
-/** 按键是否存在识别参数声明，保留 argument?: T 的可选值类型。 */
+/** Detects argument declarations by key presence, preserving the optional value type of argument?: T. */
 type CommandArgument<Command> = "argument" extends keyof Command ? Command["argument"] : ArgumentValue;
 
 type LowerLetter =
     "a" | "b" | "c" | "d" | "e" | "f" | "g" | "h" | "i" | "j" | "k" | "l" | "m" | "n" | "o" | "p" | "q" | "r" | "s" | "t" | "u" | "v" | "w" | "x" | "y" | "z";
 
-/** 为 kebab-case 键生成 camelCase 候选名称；不转换下划线。 */
+/** Generates candidate camelCase names for kebab-case keys; underscores are not converted. */
 type CamelKey<Key extends string> = Key extends `${infer Head}-${infer Letter}${infer Tail}`
     ? Letter extends LowerLetter
         ? `${Head}${Uppercase<Letter>}${CamelKey<Tail>}`
@@ -126,10 +126,10 @@ type KebabLetter<Letter extends string> = Letter extends Uppercase<LowerLetter> 
 
 type KebabTail<Key extends string> = Key extends `${infer Head}${infer Tail}` ? `${KebabLetter<Head>}${KebabTail<Tail>}` : Key;
 
-/** 与运行时 toKebabCase 一致：首字母转小写，后续 ASCII 大写字母前加连字符。 */
+/** Matches runtime toKebabCase: lowercases the first letter and inserts hyphens before subsequent uppercase ASCII letters. */
 type KebabKey<Key extends string> = Key extends `${infer Head}${infer Tail}` ? `${Lowercase<Head>}${KebabTail<Tail>}` : Key;
 
-/** 只有能被代理反向查找到原始键的候选，才是可用别名。 */
+/** Only candidates that the proxy can resolve back to the original key are valid aliases. */
 type CamelAliases<Options> = {
     [Name in Extract<keyof Options, string>]: KebabKey<CamelKey<Name>> extends Name ? CamelKey<Name> : never;
 }[Extract<keyof Options, string>];
@@ -139,25 +139,25 @@ type OptionValue<Options, Name> = Name extends keyof Options ? Options[Name] : n
 type FallbackOptionValue<Options, Name> = Name extends string ? OptionValue<Options, KebabKey<Name>> : never;
 
 /**
- * 对齐代理的读取逻辑：先查原始键，缺失时查 kebab-case 键。
- * 同名冲突时两种值都可能出现；所有 option 都可能未传入。
+ * Matches proxy reads: checks the original key first, then falls back to the kebab-case key when absent.
+ * Name collisions may yield either value; any option may be omitted.
  */
 type ProxiedOptions<Options> = {
     readonly [Name in keyof Options | CamelAliases<Options>]?: OptionValue<Options, Name> | FallbackOptionValue<Options, Name>;
 };
 
-/** 公共 option 名称优先，命令内不重复声明这些名称。 */
+/** Common option names take precedence and are excluded from command-specific declarations. */
 type ScopedOptions<Schema extends EriiSchema<Schema>, Name extends CommandName<Schema>> = Omit<
     LocalOptions<Schema["commands"][Name]>,
     keyof CommonOptions<Schema>
 >;
 
-/** handler 可读取的 option：命令专属项、公共项及 camelCase 别名。 */
+/** Options available to a handler: command-specific options, common options, and camelCase aliases. */
 export type TypedCommandOptions<Schema extends EriiSchema<Schema>, Name extends CommandName<Schema>> = ProxiedOptions<
     ScopedOptions<Schema, Name> & CommonOptions<Schema>
 >;
 
-/** 不传名称时读取当前命令参数；传名称或别名时读取对应命令参数。 */
+/** Reads the current command's argument when no name is supplied, or the argument of the named command or alias. */
 export interface TypedCommandCtx<Schema extends EriiSchema<Schema>, Name extends CommandName<Schema>> {
     showVersion: () => void;
     showHelp: () => void;
@@ -165,20 +165,20 @@ export interface TypedCommandCtx<Schema extends EriiSchema<Schema>, Name extends
     getArgument<Lookup extends CommandLookup<Schema>>(name: Lookup): LookupArgument<Schema, Lookup> | undefined;
 }
 
-/** 为独立定义的 handler 提供与指定命令一致的上下文和 options 类型。 */
+/** Provides context and option types matching the specified command for independently defined handlers. */
 export type TypedCommandHandler<Schema extends EriiSchema<Schema>, Name extends CommandName<Schema>> = (
     ctx: TypedCommandCtx<Schema, Name>,
     options: TypedCommandOptions<Schema, Name>,
 ) => unknown;
 
-/** 参数元数据随 schema 声明分为必填、可选和不允许三种情况。 */
+/** Argument metadata is required, optional, or forbidden according to the schema declaration. */
 type ArgumentDefinition<Command> = "argument" extends keyof Command
     ? {} extends Pick<Command, "argument">
         ? { argument?: Argument }
         : { argument: Argument }
     : { argument?: never };
 
-/** bind 配置：首项必须是命令主名称，后续项只能是该命令的别名。 */
+/** bind configuration: the first name must be the primary command name; subsequent names must be its aliases. */
 export type TypedCommand<Schema extends EriiSchema<Schema>, Name extends CommandName<Schema>> = {
     name: Name | readonly [Name, ...CommandAliases<Schema["commands"][Name]>[]];
     description?: string;
@@ -190,7 +190,7 @@ type OptionDefinition<Name extends string> = {
     argument?: Argument;
 };
 
-/** 为每个 option 生成独立配置，保留 option 名称与 command 作用域的关联。 */
+/** Generates a separate configuration for each option, preserving the association between its name and command scope. */
 type OptionDefinitions<Options, Scope> = {
     [Name in Extract<keyof Options, string>]: OptionDefinition<Name> & Scope;
 }[Extract<keyof Options, string>];
@@ -199,10 +199,10 @@ type ScopedOptionDefinitions<Schema extends EriiSchema<Schema>> = {
     [Name in CommandName<Schema>]: OptionDefinitions<ScopedOptions<Schema, Name>, { command: Name | CommandAliases<Schema["commands"][Name]> }>;
 }[CommandName<Schema>];
 
-/** addOption 配置：公共项省略 command，专属项必须指定所属命令或别名。 */
+/** addOption configuration: common options omit command; scoped options must specify their owning command or alias. */
 export type TypedOption<Schema extends EriiSchema<Schema>> = OptionDefinitions<CommonOptions<Schema>, { command?: never }> | ScopedOptionDefinitions<Schema>;
 
-/** 供 Erii.getArgument 使用的内部查找结果；缺失值由方法签名单独补上。 */
+/** Internal lookup result for Erii.getArgument; the method signature separately accounts for missing values. */
 export type LookupArgument<Schema extends EriiSchema<Schema>, Lookup extends CommandLookup<Schema>> = CommandArgument<
     Schema["commands"][ResolveCommand<Schema, Lookup>]
 >;

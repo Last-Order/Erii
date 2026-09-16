@@ -1,6 +1,6 @@
 import CLI from "clui";
 import clc from "cli-color";
-import type { CommandMap, Option } from "./types.js";
+import type { CommandMap, Option } from "./types";
 
 /** Render the help body; the caller prints the version first. */
 export function renderHelp(commands: CommandMap, commonOptions: Option[]): void {

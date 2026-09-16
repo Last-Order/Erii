@@ -1,8 +1,8 @@
 import yargs from "yargs-parser";
 import chalk from "chalk";
 import validator from "validator";
-import { renderHelp } from "./help.js";
-import { createCamelProxifiedObject } from "./utils/convert.js";
+import { renderHelp } from "./help";
+import { createCamelProxifiedObject } from "./utils/convert";
 import type {
     Argument,
     ArgumentValue,
@@ -22,7 +22,7 @@ import type {
     TypedCommand,
     TypedCommandHandler,
     TypedOption,
-} from "./types.js";
+} from "./types";
 
 export class Erii<S extends EriiSchema<S> = never> {
     rawArguments: string[];
@@ -45,7 +45,7 @@ export class Erii<S extends EriiSchema<S> = never> {
         });
         this.validator = validator;
 
-        // 不响应-后第二个字符起的命令
+        // Ignore parsed flags without an explicit matching token, including flags expanded from short-option groups.
         for (const key of Object.keys(this.parsedArguments)) {
             if (key !== "_" && !this.rawArguments.includes("--" + key) && !this.rawArguments.includes("-" + key)) {
                 delete this.parsedArguments[key];
@@ -54,7 +54,7 @@ export class Erii<S extends EriiSchema<S> = never> {
     }
 
     /**
-     * 绑定命令处理函数
+     * Binds a command handler.
      * @param config
      * @param handler
      */
@@ -96,7 +96,7 @@ export class Erii<S extends EriiSchema<S> = never> {
     }
 
     /**
-     * 总是执行
+     * Registers a handler that runs on every start.
      * @param handler
      */
     always(handler: LifecycleHandler) {
@@ -108,7 +108,7 @@ export class Erii<S extends EriiSchema<S> = never> {
     }
 
     /**
-     * 增加设置项
+     * Registers an option.
      * @param config
      */
     addOption(config: TypedOption<S>): void;
@@ -145,7 +145,7 @@ export class Erii<S extends EriiSchema<S> = never> {
     }
 
     /**
-     * 设定基础信息
+     * Sets the CLI metadata.
      * @param metaInfo
      */
     setMetaInfo({ version = "", name = "" }: MetaInfo = {}): void {
@@ -154,7 +154,7 @@ export class Erii<S extends EriiSchema<S> = never> {
     }
 
     /**
-     * 显示帮助信息
+     * Displays help information.
      */
     showHelp(command?: CommandLookup<S>) {
         this.showVersion();
@@ -162,13 +162,13 @@ export class Erii<S extends EriiSchema<S> = never> {
     }
 
     /**
-     * 显示版本号
+     * Displays the version number.
      */
     showVersion() {
         console.log(`${this.name} / ${this.version}`);
     }
     /**
-     * 启动
+     * Starts command dispatch.
      */
     start() {
         if (this.alwaysHandler) {
@@ -192,7 +192,7 @@ export class Erii<S extends EriiSchema<S> = never> {
     }
 
     /**
-     * 执行命令担当函数
+     * Executes the command handler.
      * @param command
      */
     private exec(command: string): void {
@@ -252,9 +252,9 @@ export class Erii<S extends EriiSchema<S> = never> {
     }
 
     /**
-     * 获得命令的参数
+     * Gets the argument for a command.
      * @param commandName
-     * @param followRedirect 是否遵循重定向
+     * @param followRedirect Whether to follow alias redirects.
      */
     getArgument<N extends CommandLookup<S>>(commandName: N, followRedirect?: boolean): LookupArgument<S, N> | undefined;
     getArgument(commandName: string, followRedirect = true): unknown {
@@ -281,8 +281,8 @@ export class Erii<S extends EriiSchema<S> = never> {
     }
 
     /**
-     * 启动
-     * エリイ 起きてます❤
+     * Starts command dispatch.
+     * Erii is awake!
      */
     okite() {
         return this.start();
