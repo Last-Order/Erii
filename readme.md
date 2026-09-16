@@ -6,10 +6,22 @@
 
 ## Installation
 `npm install erii --save`
+This package is ESM-only and requires Node.js 22.18 or later. Use `import` from an ESM project (`"type": "module"` in package.json, or an `.mjs` file).
+
+## Development
+
+- `npm run build`: bundle ESM and TypeScript declarations with tsdown.
+- `npm run typecheck`: check source and consumer types in strict mode.
+- `npm test`: build, check types, and run regression tests.
+
+## TypeScript
+
+The package exports `Command`, `Option`, `Argument`, `CommandCtx`, `CommandHandler`, `CommandOptions`, `ArgumentValue`, `ArgumentValidator`, `ValidatorName`, `ParsedArguments`, and `MetaInfo` types. Handler options are always provided; individual options and `getArgument()` can be `undefined`. Values retain the parser's strings, numbers, booleans, arrays, and nested objects, so narrow them before use. String validators accept only validator.js methods callable with one string and returning a boolean.
+
 ## Usage
 
 ```JavaScript
-const Erii = require('erii').default;
+import Erii from 'erii';
 
 Erii.setMetaInfo({
     version: '0.0.1',
@@ -30,7 +42,7 @@ Erii.bind({
 
 // add options for `help` command
 Erii.addOption({
-    name: ['verbose', 'debug'], 
+    name: ['verbose', 'debug'],
     command: 'help', // bind to command
     description: 'debug output', // option description
     argument: { // definition of option argument
@@ -55,7 +67,7 @@ Erii.start(); // don't forget to start Erii.
 
 **Example**
 
-Call with 
+Call with
 
 `node index.js --help xxx --debug 1`
 
@@ -63,15 +75,15 @@ Call with
 // ...
 // PART OF CODE
 Erii.bind({
-    name: ['help', 'h'], 
+    name: ['help', 'h'],
     description: 'Show Help',
     argument: {
         name: 'command',
         description: 'query help of a specified command'
     }
 }, (ctx, options) => {
-    const { debug } = options;
-    console.log(debug);  // '1'
+    const { verbose } = options; // option aliases use the primary name
+    console.log(verbose); // 1
     console.log(ctx.getArgument()); // 'xxx'
 });
 
@@ -136,7 +148,7 @@ Erii.addOption({
     argument: {
         name: 'level',
         description: 'level of verbose output',
-        validate: (value) => Erii.validator.isInt(value)
+        validate: (value) => Erii.validator.isInt(String(value))
     }
 });
 ```

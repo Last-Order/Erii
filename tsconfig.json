@@ -1,14 +1,16 @@
 {
     "compilerOptions": {
-        "target": "es6",
-        "outDir": "dist",
-        "declaration": true,
-        "module": "commonjs",
-        "sourceMap": true,
-        "lib": ["es7", "esnext"],
-        "experimentalDecorators": true,
+        "target": "ES2022",
+        "module": "NodeNext",
+        "moduleResolution": "NodeNext",
+        "noEmit": true,
+        "strict": true,
+        "esModuleInterop": true,
+        "verbatimModuleSyntax": true,
+        "lib": ["ES2022"],
+        "types": ["node"],
         "newLine": "lf"
     },
-    "include": ["src/**/*"],
+    "include": ["src/**/*", "test/**/*.ts", "tsdown.config.ts"],
     "exclude": ["dist"]
 }

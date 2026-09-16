@@ -1,44 +1,31 @@
-export function toCamelCase(str: string) {
-    return str.replace(/([-_][a-z])/gi, ($1) => {
-        return $1.toUpperCase().replace("-", "");
-    });
+export function toCamelCase(str: string): string {
+    return str.replace(/[-_]([a-z])/gi, (_, letter: string) => letter.toUpperCase());
 }
 
-export function toKebabCase(str: string) {
-    return (
-        str[0].toLowerCase() +
-        str
-            .slice(1, str.length)
-            .replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`)
-    );
+export function toKebabCase(str: string): string {
+    return (str[0]?.toLowerCase() ?? '') + str.slice(1).replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`);
 }
 
-export function convertObjectKey(before: { [index: string]: any }) {
-    return Object.fromEntries(
-        Object.entries(before).map(([key, value]) => [toCamelCase(key), value])
-    );
+export function convertObjectKey<T>(before: Record<string, T>): Record<string, T> {
+    return Object.fromEntries(Object.entries(before).map(([key, value]) => [toCamelCase(key), value]));
 }
 
-export function createCamelProxifiedObject(before: { [index: string]: any }) {
-    const originalObject = before;
+export function createCamelProxifiedObject<T extends object>(before: T): T {
     return new Proxy(before, {
-        get: (target: typeof before, key: string) => {
-            return originalObject[key] ?? originalObject[toKebabCase(key)];
+        get(target, key, receiver): unknown {
+            const value: unknown = Reflect.get(target, key, receiver);
+            return typeof key === 'string' ? value ?? Reflect.get(target, toKebabCase(key), receiver) : value;
         },
-        set: (target: typeof before, key: string, value: any) => {
-            // 如果赋值的是camel case的key，而驼峰形式key是从kebab case的key proxy来的 则赋值其kebab case形式的key的值
+        set(target, key, value: unknown, receiver): boolean {
             if (
-                !key.includes("-") &&
-                (originalObject[key] === undefined ||
-                    originalObject[key] === null) &&
-                originalObject[toKebabCase(key)] !== undefined &&
-                originalObject[toKebabCase(key)] !== null
+                typeof key === 'string' &&
+                !key.includes('-') &&
+                Reflect.get(target, key, receiver) == null &&
+                Reflect.get(target, toKebabCase(key), receiver) != null
             ) {
-                target[toKebabCase(key)] = value;
-            } else {
-                target[key] = value;
+                return Reflect.set(target, toKebabCase(key), value, receiver);
             }
-            return value;
+            return Reflect.set(target, key, value, receiver);
         },
     });
 }

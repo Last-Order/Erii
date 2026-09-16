@@ -1,8 +1,26 @@
-const yargs = require('yargs-parser');
-const CLI = require('clui'), clc = require('cli-color');
-const chalk = require('chalk');
-const validator = require('validator');
-import { createCamelProxifiedObject } from "./utils/convert";
+import yargs from 'yargs-parser';
+import CLI from 'clui';
+import clc from 'cli-color';
+import chalk from 'chalk';
+import validator from 'validator';
+import { createCamelProxifiedObject } from './utils/convert.js';
+
+export type ArgumentValue = string | number | boolean | ArgumentValue[] | { [key: string]: ArgumentValue };
+export type CommandOptions = Record<string, ArgumentValue | undefined>;
+export interface ParsedArguments extends CommandOptions {
+    _: Array<string | number>;
+}
+export type CommandHandler = (ctx: CommandCtx, options: CommandOptions) => unknown;
+export type LifecycleHandler = () => unknown;
+export type ArgumentValidator = (value: ArgumentValue | undefined, logger: (message: string) => void) => boolean;
+export type ValidatorName = {
+    [K in keyof typeof validator]: typeof validator[K] extends (value: string) => boolean ? K : never;
+}[keyof typeof validator];
+export interface MetaInfo {
+    version?: string;
+    name?: string;
+}
+
 export interface Command {
     name: string | string[];
     description?: string;
@@ -10,7 +28,7 @@ export interface Command {
     alias?: string[],
     redirect?: string;
     options?: Option[];
-    handler?: (ctx: CommandCtx, options?: object) => any
+    handler?: CommandHandler
 }
 
 export interface Option {
@@ -21,35 +39,32 @@ export interface Option {
 }
 
 export interface CommandMap {
-    [key: string]: Command;
+    [key: string]: Command | undefined;
 };
 
 export interface CommandCtx {
     showVersion: () => void;
     showHelp: () => void;
-    getArgument: (commandName?: string) => string;
+    getArgument: (commandName?: string) => ArgumentValue | undefined;
 }
 
 export interface Argument {
     name: string;
     description: string;
-    validate?: string | ((value: any, logger: (message: string) => void) => boolean);
+    validate?: ValidatorName | ArgumentValidator;
 }
 
 export class Erii {
     rawArguments: string[];
-    parsedArguments: {
-        _?: string[],
-        [key: string]: string | string[];
-    } = {};
+    parsedArguments: ParsedArguments;
     private version: string = "1.0.0";
     private name: string = "Erii";
 
     commands: CommandMap = {};
     commonOptions: Option[] = [];
-    validator: any;
-    alwaysHandler: () => void;
-    defaultHandler: () => void;
+    validator: typeof validator;
+    alwaysHandler?: LifecycleHandler;
+    defaultHandler?: LifecycleHandler;
 
     constructor() {
         this.rawArguments = process.argv.slice(2);
@@ -73,27 +88,30 @@ export class Erii {
      * @param config
      * @param handler
      */
-    bind(config: Command, handler: (ctx: CommandCtx, ...extraArguments) => any) {
+    bind(config: Command, handler: CommandHandler): void {
         if (config.name === undefined) {
             return console.error(chalk.red("Invalid command binding, ignored."));
         }
 
         const { name, description, argument } = config;
 
-        const mainCommand = Array.isArray(name) ? name.shift() : name;
+        const [mainCommand, ...aliases] = Array.isArray(name) ? name : [name];
+        if (!mainCommand) {
+            console.error(chalk.red('Invalid command binding, ignored.'));
+            return;
+        }
 
         this.commands[mainCommand] = {
             name: mainCommand,
             description,
             argument,
-            alias: [],
+            alias: aliases,
             options: [],
             handler
         };
 
         if (Array.isArray(name)) {
-            for (const alias of name) {
-                this.commands[mainCommand].alias.push(alias);
+            for (const alias of aliases) {
                 this.commands[alias] = {
                     name: alias,
                     redirect: mainCommand
@@ -106,14 +124,14 @@ export class Erii {
      * 总是执行
      * @param handler
      */
-    always(handler: () => any) {
+    always(handler: LifecycleHandler) {
         this.alwaysHandler = handler;
     }
 
     /**
      *
      */
-    default(handler: () => any) {
+    default(handler: LifecycleHandler) {
         this.defaultHandler = handler;
     }
 
@@ -129,7 +147,9 @@ export class Erii {
             if (!(config.command in this.commands)){
                 return console.error(chalk.red(`Command for option [${config.name.join(', ')}] not found, ignored.`));
             }
-            this.commands[config.command].options.push(config);
+            const command = this.commands[config.command];
+            const target = command?.redirect ? this.commands[command.redirect] : command;
+            if (target) (target.options ??= []).push(config);
         }
     }
 
@@ -158,7 +178,7 @@ export class Erii {
     setMetaInfo({
         version = "",
         name = ""
-    } = {}) {
+    }: MetaInfo = {}): void {
         this.version = version;
         this.name = name;
     }
@@ -178,36 +198,37 @@ export class Erii {
             .column('Alias', 20, [clc.cyan])
             .output();
         new Line().output();
-        for (const key of Object.keys(this.commands)) {
-            if (this.commands[key].redirect) {
+        for (const [key, boundCommand] of Object.entries(this.commands)) {
+            if (!boundCommand) continue;
+            if (boundCommand.redirect) {
                 continue;
             }
             let commandText = '--' + key;
             let aliasText = '';
-            if (this.commands[key].argument) {
-                commandText += ` <${this.commands[key].argument.name}>`;
+            if (boundCommand.argument) {
+                commandText += ` <${boundCommand.argument.name}>`;
             }
-            if (this.commands[key].alias.length > 0) {
-                const aliasWithPrefixes = this.commands[key].alias.map(alias => alias.length === 1 ? `-${alias}` : `--${alias}`);
+            if ((boundCommand.alias ?? []).length > 0) {
+                const aliasWithPrefixes = (boundCommand.alias ?? []).map(alias => alias.length === 1 ? `-${alias}` : `--${alias}`);
                 aliasText += aliasWithPrefixes.join(' / ');
             }
             new Line()
                 .padding(5)
                 .column(commandText, 30)
-                .column(this.commands[key].description, 30)
+                .column(boundCommand.description ?? '', 30)
                 .column(aliasText, 20)
                 .output();
-            if (this.commands[key].argument) {
+            if (boundCommand.argument) {
                 // 参数说明
                 new Line()
                     .padding(9)
-                    .column(`<${this.commands[key].argument.name}>`, 26)
-                    .column(this.commands[key].argument.description, 30)
+                    .column(`<${boundCommand.argument.name}>`, 26)
+                    .column(boundCommand.argument.description, 30)
                     .output();
             }
-            if (this.commands[key].options.length > 0) {
+            if ((boundCommand.options ?? []).length > 0) {
                 // 设置项说明
-                for (const option of this.commands[key].options) {
+                for (const option of boundCommand.options ?? []) {
                     let optionsText = '';
                     const optionName = Array.isArray(option.name) ? option.name : [option.name];
                     if (option.argument) {
@@ -218,14 +239,14 @@ export class Erii {
                     new Line()
                         .padding(9)
                         .column(optionsText, 26)
-                        .column(option.description || '')
+                        .column(option.description || '', 30)
                         .output();
                     if (option.argument) {
                         // 设置项参数说明
                         new Line()
                         .padding(13)
                         .column(`<${option.argument.name}>`, 22)
-                        .column(option.argument.description || '')
+                        .column(option.argument.description || '', 30)
                         .output();
                     }
                 }
@@ -251,14 +272,14 @@ export class Erii {
                 new Line()
                     .padding(5)
                     .column(optionsText, 30)
-                    .column(option.description || '')
+                    .column(option.description || '', 30)
                     .output();
                 if (option.argument) {
                     // 设置项参数说明
                     new Line()
                     .padding(9)
                     .column(`<${option.argument.name}>`, 26)
-                    .column(option.argument.description || '')
+                    .column(option.argument.description || '', 30)
                     .output();
                 }
             }
@@ -290,7 +311,7 @@ export class Erii {
         }
         for (const key of this.parsedArguments['_']) {
             if (key in this.commands) {
-                this.exec(key);
+                this.exec(String(key));
             }
         }
     }
@@ -300,50 +321,50 @@ export class Erii {
      * @param command
      * @param extraArguments
      */
-    private exec(command) {
-        if (this.commands[command].redirect) {
-            // 别名重定向
-            this.exec(this.commands[command].redirect);
-        } else {
-            // 传递绑定的设置及通用设置
-            const options = {};
-            const bandOptions = this.commands[command].options.concat(this.commonOptions);
-            for (const option of bandOptions) {
-                for (const name of option.name) {
-                    if (name in this.parsedArguments) {
-                        // do option argument validation
-                        if (this.validateArgument(this.parsedArguments[name], option.argument)) {
-                            options[option.name[0]] = this.parsedArguments[name];
-                        } else {
-                            console.error(chalk.red(`Argument validation failed for option '${name}'.`));
-                            if (typeof option.argument.validate === 'string') {
-                                console.error(chalk.red(`<${option.argument.name}> should be a/an ${option.argument.validate.slice(2)}.`))
-                            }
-                        }
+    private exec(command: string): void {
+        const boundCommand = this.commands[command];
+        if (!boundCommand) return;
+        if (boundCommand.redirect) {
+            this.exec(boundCommand.redirect);
+            return;
+        }
+        const options: CommandOptions = {};
+        for (const option of [...(boundCommand.options ?? []), ...this.commonOptions]) {
+            const names = Array.isArray(option.name) ? option.name : [option.name];
+            const primaryName = names[0];
+            if (!primaryName) continue;
+            for (const name of names) {
+                if (!(name in this.parsedArguments)) continue;
+                if (this.validateArgument(this.parsedArguments[name], option.argument)) {
+                    options[primaryName] = this.parsedArguments[name];
+                } else {
+                    console.error(chalk.red(`Argument validation failed for option '${name}'.`));
+                    if (typeof option.argument?.validate === 'string') {
+                        console.error(chalk.red(`<${option.argument.name}> should be a/an ${option.argument.validate.slice(2)}.`));
                     }
                 }
             }
-            // do command argument validation
-            if (this.validateArgument(this.parsedArguments[command], this.commands[command].argument)) {
-                this.commands[command].handler(this.commandCtx(command), createCamelProxifiedObject(options));
-            } else {
-                console.error(chalk.red(`Argument validation failed for command ${command}`));
-                const validateMethod = this.commands[command].argument.validate;
-                if (typeof validateMethod === 'string') {
-                    console.error(chalk.red(`<${this.commands[command].argument.name}> should be a/an ${validateMethod.slice(2)}.`))
-                }
+        }
+        const argumentValue = this.findArgument(command);
+        if (this.validateArgument(argumentValue, boundCommand.argument)) {
+            boundCommand.handler?.(this.commandCtx(command), createCamelProxifiedObject(options));
+        } else {
+            console.error(chalk.red(`Argument validation failed for command ${command}`));
+            if (typeof boundCommand.argument?.validate === 'string') {
+                console.error(chalk.red(`<${boundCommand.argument.name}> should be a/an ${boundCommand.argument.validate.slice(2)}.`));
             }
         }
     }
 
-    validateArgument(argumentValue: any, argument: Argument) {
+    validateArgument(argumentValue: ArgumentValue | undefined, argument?: Argument): boolean {
         if (!argument || !argument.validate) {
             // no need to validate
             return true;
         }
         if (typeof argument.validate === "string") {
             if (argument.validate in this.validator) {
-                return this.validator[argument.validate](argumentValue.toString());
+                if (argumentValue === undefined) return false;
+                return this.validator[argument.validate](String(argumentValue));
             } else {
                 console.error(chalk.red(`Unknown validate method for ${argument.name}.`));
                 return true;
@@ -361,25 +382,23 @@ export class Erii {
      * @param commandName
      * @param followRedirect 是否遵循重定向
      */
-    getArgument(commandName: string, followRedirect = true): string {
-        if (this.commands[commandName]) {
-            if (this.commands[commandName].redirect) {
-                return this.getArgument(this.commands[commandName].redirect);
-            } else {
-                if (Object.keys(this.parsedArguments).includes(commandName) && commandName !== '_') {
-                    return this.parsedArguments[commandName] as string;
-                } else {
-                    for (const alias of this.commands[commandName].alias) {
-                        if (Object.keys(this.parsedArguments).includes(alias)) {
-                            return this.parsedArguments[alias] as string;
-                        }
-                    }
-                    console.error(chalk.red(`Command ${commandName} not found.`));
-                }
-            }
-        } else {
-            console.error(chalk.red(`Command ${commandName} not found.`));
+    getArgument(commandName: string, followRedirect = true): ArgumentValue | undefined {
+        const value = this.findArgument(commandName, followRedirect);
+        if (value === undefined) console.error(chalk.red(`Command ${commandName} not found.`));
+        return value;
+    }
+
+    private findArgument(commandName: string, followRedirect = true): ArgumentValue | undefined {
+        const command = this.commands[commandName];
+        if (!command) return undefined;
+        if (command.redirect && followRedirect) return this.findArgument(command.redirect);
+        if (commandName !== '_' && Object.hasOwn(this.parsedArguments, commandName)) {
+            return this.parsedArguments[commandName];
         }
+        for (const alias of command.alias ?? []) {
+            if (Object.hasOwn(this.parsedArguments, alias)) return this.parsedArguments[alias];
+        }
+        return undefined;
     }
 
     /**
