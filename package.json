@@ -8,6 +8,7 @@
     "build": "tsdown",
     "typecheck": "tsc --noEmit",
     "test": "npm run build && npm run typecheck && node --test test/*.test.mjs",
+    "test:coverage": "npm run build && npm run typecheck && node --test --experimental-test-coverage --test-coverage-include=dist/index.mjs --test-coverage-include=src/utils/convert.ts --test-coverage-lines=100 --test-coverage-functions=100 --test-coverage-branches=95 test/*.test.mjs",
     "prepack": "npm run build"
   },
   "repository": {

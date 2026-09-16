@@ -1,17 +1,9 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { readFileSync, readdirSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
 import erii, { Erii } from 'erii';
-
-function createErii(args = []) {
-    const previous = process.argv;
-    process.argv = [previous[0], 'example.mjs', ...args];
-    try {
-        return new Erii();
-    } finally {
-        process.argv = previous;
-    }
-}
+import { createErii } from './helpers.mjs';
 
 test('package exposes ESM default and named exports with declarations', () => {
     assert.ok(erii instanceof Erii);
@@ -20,6 +12,31 @@ test('package exposes ESM default and named exports with declarations', () => {
     assert.equal(pkg.exports['.'].require, undefined);
     assert.ok(readFileSync(new URL('../' + pkg.types, import.meta.url)).length);
     assert.ok(readdirSync(new URL('../dist', import.meta.url)).every(file => !file.endsWith('.cjs')));
+});
+
+test('default singleton reads real process argv in an ESM consumer', () => {
+    const result = spawnSync(process.execPath, ['--input-type=module', '--eval', `
+        import erii from 'erii';
+        erii.bind({ name: ['run', 'r'] }, (ctx, options) => {
+            console.log(JSON.stringify({ argument: ctx.getArgument(), options }));
+        });
+        erii.addOption({ name: 'verbose' });
+        erii.start();
+    `, 'example.mjs', '-r', '42', '--verbose'], {
+        cwd: new URL('..', import.meta.url), encoding: 'utf8', timeout: 10_000,
+    });
+    assert.ifError(result.error);
+    assert.equal(result.status, 0, result.stderr);
+    assert.deepEqual(JSON.parse(result.stdout), { argument: 42, options: { verbose: true } });
+});
+
+test('CommonJS require cannot resolve the import-only package entry', () => {
+    const result = spawnSync(process.execPath, ['--input-type=commonjs', '--eval', `
+        const assert = require('node:assert/strict');
+        assert.throws(() => require('erii'), { code: 'ERR_PACKAGE_PATH_NOT_EXPORTED' });
+    `], { cwd: new URL('..', import.meta.url), encoding: 'utf8', timeout: 10_000 });
+    assert.ifError(result.error);
+    assert.equal(result.status, 0, result.stderr);
 });
 
 test('command aliases preserve input config and validate numeric arguments', () => {

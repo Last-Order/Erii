@@ -13,6 +13,9 @@ This package is ESM-only and requires Node.js 22.18 or later. Use `import` from 
 - `npm run build`: bundle ESM and TypeScript declarations with tsdown.
 - `npm run typecheck`: check source and consumer types in strict mode.
 - `npm test`: build, check types, and run regression tests.
+- `npm run test:coverage`: run the same checks with coverage gates (100% lines/functions, 95% branches).
+
+See [test/README.md](test/README.md) for the test scenario matrix. Runtime tests exercise the built ESM package; utility tests also cover source functions that are removed from the bundle when unused.
 
 ## TypeScript
 
