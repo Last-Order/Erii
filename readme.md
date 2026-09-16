@@ -2,166 +2,141 @@
 
 ![](./logo.png)
 
-[![npm version](https://badge.fury.io/js/erii.svg)](https://badge.fury.io/js/erii)
-
 ## Installation
-`npm install erii --save`
-This package is ESM-only and requires Node.js 22.18 or later. Use `import` from an ESM project (`"type": "module"` in package.json, or an `.mjs` file).
 
-## Development
+Use Node.js 22.18 or later and set `"type": "module"` in your `package.json`.
 
-- `npm run build`: bundle ESM and TypeScript declarations with tsdown.
-- `npm run typecheck`: check source and consumer types in strict mode.
-- `npm test`: build, check types, and run regression tests.
-- `npm run test:coverage`: run the same checks with coverage gates (100% lines/functions, 95% branches).
-
-See [test/README.md](test/README.md) for the test scenario matrix. Runtime tests exercise the built ESM package; utility tests also cover source functions that are removed from the bundle when unused.
-
-## TypeScript
-
-The package exports `Command`, `Option`, `Argument`, `CommandCtx`, `CommandHandler`, `CommandOptions`, `ArgumentValue`, `ArgumentValidator`, `ValidatorName`, `ParsedArguments`, and `MetaInfo` types. Handler options are always provided; individual options and `getArgument()` can be `undefined`. Values retain the parser's strings, numbers, booleans, arrays, and nested objects, so narrow them before use. String validators accept only validator.js methods callable with one string and returning a boolean.
+```sh
+npm install erii
+```
 
 ## Usage
 
-```JavaScript
+Define your commands and options, register handlers, then call `start()`.
+
+```ts
 import Erii from 'erii';
 
-Erii.setMetaInfo({
-    version: '0.0.1',
-    name: 'example'
-});
+type CLI = {
+    commonOptions: {
+        verbose?: boolean;
+    };
+    commands: {
+        build: {
+            aliases: 'b';
+            argument: string;
+            options: {
+                outDir?: string;
+                minify?: boolean;
+            };
+        };
+        serve: {
+            options: {
+                port?: number;
+                mode?: 'dev' | 'prod';
+            };
+        };
+    };
+};
 
-// Bind commands
-Erii.bind({
-    name: ['help', 'h'], // `h` will be set as an alias
-    description: 'Show Help', // command description
-    argument: {
-        name: 'command',
-        description: 'query help of a specified command'
-    }
+const cli = new Erii<CLI>();
+cli.setMetaInfo({ name: 'example', version: '1.0.0' });
+
+cli.bind({
+    name: ['build', 'b'],
+    description: 'Build the project',
+    argument: { name: 'path', description: 'Source directory' },
 }, (ctx, options) => {
-    ctx.showHelp(); // show help text
+    const path = ctx.getArgument(); // string | undefined
+    const output = options.outDir; // string | undefined
+    const verbose = options.verbose; // boolean | undefined
+    console.log({ path, output, verbose });
 });
 
-// add options for `help` command
-Erii.addOption({
-    name: ['verbose', 'debug'],
-    command: 'help', // bind to command
-    description: 'debug output', // option description
-    argument: { // definition of option argument
-        name: 'level',
-        description: 'level of debug output'
-    }
+cli.bind({ name: 'serve' }, (_, options) => {
+    console.log(options.port, options.mode);
 });
 
-Erii.addOption({
-    name: ['test'],
-    // without binding to a specified command,
-    // this option will be set as a common option.
-    description: 'show test information',
+cli.addOption({ name: ['verbose', 'v'] });
+cli.addOption({ command: 'build', name: ['outDir', 'out-dir', 'o'] });
+cli.addOption({ command: 'b', name: 'minify' });
+cli.addOption({ command: 'serve', name: 'port' });
+cli.addOption({
+    command: 'serve',
+    name: 'mode',
     argument: {
-        name: 'test-argument',
-        description: 'test argument'
-    }
+        name: 'mode',
+        description: 'Server mode',
+        validate: value => value === 'dev' || value === 'prod',
+    },
 });
 
-Erii.start(); // don't forget to start Erii.
+cli.start(); // okite() is also available.
 ```
 
-**Example**
+```sh
+node index.js --build src --out-dir dist --verbose
+node index.js serve --port 3000 --mode dev
+```
 
-Call with
+## Aliases
 
-`node index.js --help xxx --debug 1`
+Put the primary name first and aliases after it. Read options using the primary name, such as `options.outDir`.
 
-```Javascript
-// ...
-// PART OF CODE
-Erii.bind({
-    name: ['help', 'h'],
-    description: 'Show Help',
+```sh
+node index.js -b src -o dist -v
+```
+
+## Reading arguments
+
+Use `ctx.getArgument()` inside a handler, or look up a command by name:
+
+```ts
+const path = cli.getArgument('build');
+if (path !== undefined) {
+    console.log(path);
+}
+```
+
+## Validation
+
+Use `argument.validate` to check values with a validator.js method:
+
+```ts
+cli.addOption({
+    command: 'serve',
+    name: 'port',
+    argument: { name: 'port', description: 'Listening port', validate: 'isInt' },
+});
+```
+
+To use a custom validator, return `true` for accepted input:
+
+```ts
+cli.addOption({
+    command: 'serve',
+    name: 'port',
     argument: {
-        name: 'command',
-        description: 'query help of a specified command'
-    }
-}, (ctx, options) => {
-    const { verbose } = options; // option aliases use the primary name
-    console.log(verbose); // 1
-    console.log(ctx.getArgument()); // 'xxx'
-});
-
-Erii.addOption({
-    name: ['verbose', 'debug'],
-    description: 'show verbose output',
-    argument: {
-        name: 'level',
-        description: 'level of verbose output'
-    }
-});
-
-Erii.start();
-```
-
-
-**Help Text**
-```
-example / 0.0.1
-
-Help:
-     Commands                      Description                   Alias
-
-     --help <command>              Show Help                     --h
-         <command>                 query help of a specified comm
-
-Options:
-
-     Options                       Description
-     --verbose, debug <level>      show verbose output
-         <level>                   level of verbose output
-```
-
-**Argument Validation**
-
-Argument validation are based on [validator.js](https://github.com/chriso/validator.js/).
-
-`Erii.validator` points to a `validator` exported by `validator.js`.
-
-Erii can validate arguments automatically.
-
-Define the validate methods in `argument` parameter.
-
-```JavaScript
-Erii.addOption({
-    name: ['verbose', 'debug'],
-    description: 'show verbose output',
-    argument: {
-        name: 'level',
-        description: 'level of verbose output',
-        validate: 'isInt'
-    }
+        name: 'port',
+        description: 'Listening port',
+        validate: value => typeof value === 'number' && value > 0 && value <= 65535,
+    },
 });
 ```
 
-`validate` can also be a function, for example:
+## Help and lifecycle
 
-```JavaScript
-Erii.addOption({
-    name: ['verbose', 'debug'],
-    description: 'show verbose output',
-    argument: {
-        name: 'level',
-        description: 'level of verbose output',
-        validate: (value) => Erii.validator.isInt(String(value))
-    }
+Register lifecycle handlers before calling `start()`:
+
+```ts
+cli.always(() => {
+    console.log('Starting');
 });
-```
 
-`argument.validate` works in both command and option definitions.
+cli.default(() => {
+    cli.showHelp(); // Show help when no arguments are supplied.
+});
 
-**Example Output for Argument Validation**
-
-```
-PS D:\Git\erii.test> node index.js --help --verbose f
-Argument validation failed for option 'verbose'.
-<level> should be a/an Int.
+cli.showVersion();
+cli.start();
 ```

@@ -14,7 +14,8 @@ Run `npm test` to build the package, check the public declaration contracts, and
 | Output | Default/partial/reset metadata, empty help, arguments, short/long aliases, command/global options, missing descriptions, optional public command fields | `output.test.mjs` |
 | Conversion | Camel/kebab case, underscores, empty/uppercase input, object identity/value preservation and key collisions | `convert.test.mjs` |
 | Proxy | Alias reads/writes, explicit-key precedence, falsey/null/undefined values, symbols/empty keys, enumeration/JSON, non-writable properties | `convert.test.mjs`, `erii.test.mjs` |
-| Types | All exported interfaces/types, nullable lookups, narrowing, lifecycle/async handlers, validator names/signatures, invalid bindings and metadata | `types.ts` |
+| Schema | Unchanged raw values, validation during dispatch, argument lookup without revalidation | `schema.test.mjs` |
+| Types | Required schema, interface composition, optional arguments, camel-case aliases and collisions, command/option ownership, nullable lookups, value types, handler inference, validator signatures and metadata | `types.ts`, `schema-types.ts`, `validators-types.ts` |
 
 Tests normally import `erii` through its package exports, so they exercise the actual bundle and generated declarations. Conversion utility tests import the TypeScript source using Node's native type stripping to cover helpers not exported by the package. Coverage includes only `dist/index.mjs` and `src/utils/convert.ts`, excluding tests and dependencies.
 

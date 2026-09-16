@@ -15,21 +15,28 @@ import type {
     MetaInfo,
     Option,
     ParsedArguments,
+    EriiSchema,
+    CommandName,
+    CommandLookup,
+    LookupArgument,
+    TypedCommand,
+    TypedCommandHandler,
+    TypedOption,
 } from './types.js';
 
-export class Erii {
+export class Erii<S extends EriiSchema<S> = never> {
     rawArguments: string[];
     parsedArguments: ParsedArguments;
     private version: string = "1.0.0";
     private name: string = "Erii";
 
-    commands: CommandMap = {};
-    commonOptions: Option[] = [];
+    private commands: CommandMap = {};
+    private commonOptions: Option[] = [];
     validator: typeof validator;
     alwaysHandler?: LifecycleHandler;
     defaultHandler?: LifecycleHandler;
 
-    constructor() {
+    constructor(..._schema: [S] extends [never] ? [schema: never] : []) {
         this.rawArguments = process.argv.slice(2);
         this.parsedArguments = yargs(process.argv.slice(2), {
             configuration: {
@@ -51,7 +58,12 @@ export class Erii {
      * @param config
      * @param handler
      */
-    bind(config: Command, handler: CommandHandler): void {
+    bind<K extends CommandName<S>>(config: TypedCommand<S, K>, handler: TypedCommandHandler<S, NoInfer<K>>): void;
+    bind(config: unknown, handler: unknown): void {
+        this.bindCommand(config as Command, handler as CommandHandler);
+    }
+
+    private bindCommand(config: Command, handler: CommandHandler): void {
         if (config.name === undefined) {
             return console.error(chalk.red("Invalid command binding, ignored."));
         }
@@ -99,7 +111,12 @@ export class Erii {
      * 增加设置项
      * @param config
      */
-    addOption(config: Option) {
+    addOption(config: TypedOption<S>): void;
+    addOption(config: unknown): void {
+        this.registerOption(config as Option);
+    }
+
+    private registerOption(config: Option) {
         config.name = Array.isArray(config.name) ? config.name : [config.name];
         if (!config.command) {
             this.commonOptions.push(config);
@@ -122,7 +139,7 @@ export class Erii {
                 this.showHelp();
             },
             getArgument: (commandName: string = command) => {
-                return this.getArgument(commandName);
+                return this.readArgument(commandName);
             }
         }
     }
@@ -142,7 +159,7 @@ export class Erii {
     /**
      * 显示帮助信息
      */
-    showHelp(command?: string) {
+    showHelp(command?: CommandLookup<S>) {
         this.showVersion();
         renderHelp(this.commands, this.commonOptions);
     }
@@ -242,7 +259,12 @@ export class Erii {
      * @param commandName
      * @param followRedirect 是否遵循重定向
      */
-    getArgument(commandName: string, followRedirect = true): ArgumentValue | undefined {
+    getArgument<N extends CommandLookup<S>>(commandName: N, followRedirect?: boolean): LookupArgument<S, N> | undefined;
+    getArgument(commandName: string, followRedirect = true): unknown {
+        return this.readArgument(commandName, followRedirect);
+    }
+
+    private readArgument(commandName: string, followRedirect = true): ArgumentValue | undefined {
         const value = this.findArgument(commandName, followRedirect);
         if (value === undefined) console.error(chalk.red(`Command ${commandName} not found.`));
         return value;

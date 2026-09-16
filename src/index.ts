@@ -1,20 +1,20 @@
 import { Erii } from './erii.js';
 
 export { Erii };
+
 export type {
     Argument,
     ArgumentValidator,
     ArgumentValue,
-    Command,
-    CommandCtx,
-    CommandHandler,
-    CommandMap,
-    CommandOptions,
+    EriiSchema,
     LifecycleHandler,
     MetaInfo,
-    Option,
-    ParsedArguments,
+    TypedCommand,
+    TypedCommandCtx,
+    TypedCommandHandler,
+    TypedCommandOptions,
+    TypedOption,
     ValidatorName,
 } from './types.js';
 
-export default new Erii();
+export default Erii;

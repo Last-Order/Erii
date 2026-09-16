@@ -6,7 +6,7 @@ import erii, { Erii } from 'erii';
 import { createErii } from './helpers.mjs';
 
 test('package exposes ESM default and named exports with declarations', () => {
-    assert.ok(erii instanceof Erii);
+    assert.equal(erii, Erii);
     const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url)));
     assert.equal(pkg.type, 'module');
     assert.equal(pkg.exports['.'].require, undefined);
@@ -14,9 +14,10 @@ test('package exposes ESM default and named exports with declarations', () => {
     assert.ok(readdirSync(new URL('../dist', import.meta.url)).every(file => !file.endsWith('.cjs')));
 });
 
-test('default singleton reads real process argv in an ESM consumer', () => {
+test('default class reads real process argv in an ESM consumer', () => {
     const result = spawnSync(process.execPath, ['--input-type=module', '--eval', `
-        import erii from 'erii';
+        import Erii from 'erii';
+        const erii = new Erii();
         erii.bind({ name: ['run', 'r'] }, (ctx, options) => {
             console.log(JSON.stringify({ argument: ctx.getArgument(), options }));
         });
