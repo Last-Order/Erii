@@ -16,15 +16,17 @@ export function renderHelp(commands: CommandMap, commonOptions: Option[]): void 
         const commandText = "--" + key + (command.argument ? ` <${command.argument.name}>` : "");
         const aliasText = (command.alias ?? []).map((alias) => (alias.length === 1 ? `-${alias}` : `--${alias}`)).join(" / ");
 
-        new Line()
-            .padding(5)
-            .column(commandText, 30)
-            .column(command.description ?? "", 30)
-            .column(aliasText, 20)
-            .output();
+        renderRow(5, [
+            [commandText, 30],
+            [command.description ?? "", 30],
+            [aliasText, 20],
+        ]);
 
         if (command.argument) {
-            new Line().padding(9).column(`<${command.argument.name}>`, 26).column(command.argument.description, 30).output();
+            renderRow(9, [
+                [`<${command.argument.name}>`, 26],
+                [command.argument.description, 30],
+            ]);
         }
 
         for (const option of command.options ?? []) {
@@ -48,17 +50,48 @@ function renderOption(option: Option, padding: number, width: number): void {
     const names = Array.isArray(option.name) ? option.name : [option.name];
     const text = `--${names.join(", ")}` + (option.argument ? ` <${option.argument.name}>` : "");
 
-    new CLI.Line()
-        .padding(padding)
-        .column(text, width)
-        .column(option.description || "", 30)
-        .output();
+    renderRow(padding, [
+        [text, width],
+        [option.description || "", 30],
+    ]);
 
     if (option.argument) {
-        new CLI.Line()
-            .padding(padding + 4)
-            .column(`<${option.argument.name}>`, width - 4)
-            .column(option.argument.description || "", 30)
-            .output();
+        renderRow(padding + 4, [
+            [`<${option.argument.name}>`, width - 4],
+            [option.argument.description || "", 30],
+        ]);
     }
+}
+
+/** Wrap every cell before passing it to clui, whose columns silently truncate overflowing text. */
+function renderRow(padding: number, columns: readonly (readonly [text: string, width: number])[]): void {
+    const wrapped = columns.map(([text, width]) => wrapText(text, width));
+    const height = Math.max(...wrapped.map((lines) => lines.length));
+    for (let row = 0; row < height; row++) {
+        const line = new CLI.Line().padding(padding);
+        for (const [index, [, width]] of columns.entries()) {
+            line.column(wrapped[index][row] ?? "", width);
+        }
+        line.output();
+    }
+}
+
+function wrapText(text: string, width: number): string[] {
+    return text.split(/\r\n?|\n/).flatMap((line) => {
+        const lines: string[] = [];
+        while (line.length > width) {
+            let end = line.lastIndexOf(" ", width);
+            if (end <= 0) {
+                end = width;
+                // clui counts UTF-16 code units, but a line break must not split a surrogate pair.
+                const previous = line.charCodeAt(end - 1);
+                const next = line.charCodeAt(end);
+                if (previous >= 0xd800 && previous <= 0xdbff && next >= 0xdc00 && next <= 0xdfff) end--;
+            }
+            lines.push(line.slice(0, end));
+            line = line.slice(end).trimStart();
+        }
+        lines.push(line);
+        return lines;
+    });
 }

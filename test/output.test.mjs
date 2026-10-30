@@ -113,3 +113,58 @@ test("public command map tolerates optional fields, missing entries and string o
     assert.match(output(), /--global-value <value>/);
     assert.doesNotThrow(() => app.start());
 });
+
+test("help wraps complete descriptions for commands, arguments, scoped and common options", (t) => {
+    const output = captureStdout(t);
+    const app = createErii();
+    const descriptions = [
+        "Download a stream with a description longer than thirty characters.",
+        "The URL or local path of the playlist which should be downloaded.",
+        "Do not delete encrypted chunks after decryption.",
+        "A time range with both a start time and an end time.",
+        "Set the range in hh:mm:ss-hh:mm:ss format, for example 45:00-53:00.",
+        "Enable detailed logging for all registered commands.",
+        "The logging level used by all registered commands.",
+    ];
+    app.bind({ name: "download", description: descriptions[0], argument: { name: "url", description: descriptions[1] } }, () => {});
+    app.addOption({ name: "keep-encrypted-chunks", command: "download", description: descriptions[2] });
+    app.addOption({
+        name: "slice",
+        command: "download",
+        description: descriptions[3],
+        argument: { name: "range", description: descriptions[4] },
+    });
+    app.addOption({ name: "verbose", description: descriptions[5], argument: { name: "level", description: descriptions[6] } });
+    app.showHelp();
+
+    const text = output().replace(/\s+/g, " ");
+    for (const description of descriptions) {
+        assert.ok(text.includes(description), `Incomplete description: ${description}`);
+    }
+    assert.match(output(), /Do not delete encrypted chunks\n {35}after decryption\./);
+});
+
+test("help preserves long names, aliases, unbroken text and explicit description line breaks", (t) => {
+    const output = captureStdout(t);
+    const app = createErii();
+    const commandName = "download-a-stream-with-an-extraordinarily-long-command-name";
+    const argumentName = "an-extraordinarily-long-argument-name";
+    const optionName = "an-extraordinarily-long-option-name";
+    const alias = "an-extraordinarily-long-command-alias";
+    const url = "https://example.com/a/playlist/with/an/extraordinarily/long/path/video.m3u8";
+    // A surrogate pair straddles the fixed-width boundary; neither half may be lost.
+    const unicode = "x".repeat(29) + "😀" + "y".repeat(31);
+    app.bind({ name: commandName, argument: { name: argumentName, description: "" } }, () => {});
+    app.bind({ name: ["run", "r", alias] }, () => {});
+    app.addOption({ name: optionName });
+    app.addOption({ name: "url", description: url });
+    app.addOption({ name: "unicode", description: unicode });
+    app.addOption({ name: "lines", description: "First line\r\n\r\nLast line" });
+    app.showHelp();
+
+    const text = output().replace(/\s+/g, "");
+    for (const expected of [`--${commandName}<${argumentName}>`, `--${optionName}`, `-r/--${alias}`, url, unicode]) {
+        assert.ok(text.includes(expected), `Incomplete help text: ${expected}`);
+    }
+    assert.match(output(), /First line\s*\n {65}\n {35}Last line/);
+});
