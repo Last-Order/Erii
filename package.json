@@ -26,17 +26,17 @@
     "dependencies": {
         "@types/validator": "^13.15.10",
         "chalk": "^6.0.0",
-        "cli-color": "^2.0.0",
-        "clui": "^0.3.6",
+        "ink": "^8.0.0",
+        "react": "^19.3.1",
         "validator": "^13.15.35",
         "yargs-parser": "^21.0.0"
     },
     "devDependencies": {
-        "@types/cli-color": "^2.0.6",
-        "@types/clui": "^0.3.5",
         "@types/node": "^24.13.5",
+        "@types/react": "^19.3.0",
         "@types/yargs-parser": "^21.0.3",
         "prettier": "3.9.7",
+        "string-width": "^8.3.0",
         "tsdown": "^0.23.0",
         "typescript": "^7.0.2"
     },

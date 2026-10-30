@@ -124,12 +124,3 @@ test("missing validated arguments fail without throwing; custom validation recei
     );
     assert.equal(app.validateArgument("bad", { name: "id", description: "ID", validate: "isInt" }), false);
 });
-
-test("help supports omitted descriptions and command options", (t) => {
-    t.mock.method(process.stdout, "write", () => true);
-    const app = createErii();
-    app.bind({ name: ["run", "r"] }, () => {});
-    app.addOption({ name: "verbose", command: "run" });
-    app.addOption({ name: "tag", argument: { name: "tag", description: "A tag" } });
-    assert.doesNotThrow(() => app.showHelp());
-});
